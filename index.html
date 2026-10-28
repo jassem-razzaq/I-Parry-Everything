@@ -369,6 +369,9 @@
             <button class="cta ghost" id="lvl3Btn" type="button" hidden>
               Level 3
             </button>
+            <button class="cta ghost" id="lvl4Btn" type="button" hidden>
+              Level 4
+            </button>
           </div>
         </div>
         <div class="panel" id="endPanel" hidden>
@@ -527,6 +530,54 @@
         { key: "cut", side: 1 },
         { open: true },
         { key: "smite" },
+      ];
+      // level 4. Orbs come in volleys, each at its own pitch. The curse is a channel: parrying does nothing,
+      // you have to hit him while he chants. Doom, the giant orb, only ends his rage combo.
+      const LICH_MOVES = {
+        orb: {
+          dmg: 1,
+          windup: [0.65, 0.9],
+          window: 0.18,
+          stun: 0.9,
+          follow: 0.45,
+        },
+        spear: {
+          dmg: 3,
+          windup: [1.0, 1.5],
+          window: 0.24,
+          stun: 1.2,
+          follow: 0.6,
+        },
+        curse: {
+          dmg: 2,
+          windup: [1.5, 1.9],
+          window: 0.12,
+          stun: 1.4,
+          follow: 0.7,
+          unparryable: true,
+          channel: true,
+        },
+        doom: { dmg: 3, windup: 1.4, window: 0.28, stun: 1.6, follow: 0.7 },
+      };
+      const LICH_CHAIN = {
+        orb: [0.28, 0.5],
+        spear: 0.75,
+        curse: [1.1, 1.3],
+        doom: 1.25,
+      };
+      const LICH_DEFLECT = { orb: 0.16, spear: 0.3, curse: 0.45, doom: 0.3 };
+      // his rage combo makes you switch buttons: parry the volleys and the spear, hit him through each curse
+      const LICH_COMBO = [
+        { key: "orb", n: 0, windup: 0.6, side: -1 },
+        { key: "orb", n: 1, side: 1 },
+        { key: "orb", n: 2, side: -1 },
+        { key: "curse" },
+        { key: "spear", side: 1 },
+        { key: "orb", n: 0, windup: 0.55, side: 1 },
+        { key: "orb", n: 1, side: -1 },
+        { key: "orb", n: 2, side: 1 },
+        { key: "curse" },
+        { key: "doom" },
       ];
 
       /* ================= Setup ================= */
@@ -2799,31 +2850,11 @@
           sfx.thunder(0.3);
         }
         const d = boss;
-        // the crack lights (with a chime) whenever a swing would land: reeling in the exchange, or dazed after a parry
-        const exposed =
-          game.mode === "fight" &&
-          !game.cine &&
-          (d.state === "open" || (d.state === "stunned" && d.t >= 0.2));
-        if (exposed) {
-          if (!d.weakT) sfx.opening();
-          d.weakT = (d.weakT || 0) + dt;
-          if (lastPose && lastPose.weakAt && Math.random() < 26 * dt) {
-            const [wx, wy] = lastPose.weakAt;
-            parts.push({
-              x: wx + rand(-2, 3),
-              y: wy + rand(-8, 8),
-              vx: rand(-12, 12),
-              vy: rand(-34, -12),
-              g: -10,
-              drag: 1,
-              life: rand(0.25, 0.5),
-              t: 0,
-              size: 1,
-              cols: ["#ffffff", C.f0, C.f1, C.f2],
-              layer: 1,
-            });
-          }
-        } else d.weakT = 0;
+        // the crack lights whenever a swing would land: reeling in the exchange, or dazed after a parry
+        tickWeakSpot(
+          dt,
+          d.state === "open" || (d.state === "stunned" && d.t >= 0.2),
+        );
         if (d.helmOff) {
           d.helmT += dt;
           if (!d.helmLanded && d.helmT >= 1) {
@@ -3034,6 +3065,32 @@
         }
         for (const [x0, y0, x1, y1] of CRACK_BRANCH)
           line(cx + x0, y0 + by, cx + x1, y1 + by, w > 0 ? edge : N.a0);
+      }
+      // a gold weak spot (the knight's crack, the lich's phylactery) means "swing now": it lights with a chime and sheds sparks
+      function tickWeakSpot(dt, exposed) {
+        const d = boss;
+        if (!(exposed && game.mode === "fight" && !game.cine)) {
+          d.weakT = 0;
+          return;
+        }
+        if (!d.weakT) sfx.opening();
+        d.weakT = (d.weakT || 0) + dt;
+        if (lastPose && lastPose.weakAt && Math.random() < 26 * dt) {
+          const [wx, wy] = lastPose.weakAt;
+          parts.push({
+            x: wx + rand(-2, 3),
+            y: wy + rand(-8, 8),
+            vx: rand(-12, 12),
+            vy: rand(-34, -12),
+            g: -10,
+            drag: 1,
+            life: rand(0.25, 0.5),
+            t: 0,
+            size: 1,
+            cols: ["#ffffff", C.f0, C.f1, C.f2],
+            layer: 1,
+          });
+        }
       }
       function drawWeakGlow(p) {
         const [x, y] = p.weakAt,
@@ -3495,6 +3552,1253 @@
         return p;
       }
 
+      /* ================= Lich (level 4) ================= */
+      const Z = {
+        r0: "#08060c",
+        r1: "#170f21",
+        r2: "#261a35",
+        r3: "#3b2a4e", // robes
+        b0: "#3a3428",
+        b1: "#7d725b",
+        b2: "#bfb393",
+        b3: "#ece4c8", // bone
+        au0: "#5a4418",
+        au1: "#a8822e",
+        au2: "#e0c060", // tarnished gold
+        s0: "#05170b",
+        s1: "#124f29",
+        s2: "#2fa857",
+        s3: "#7cf59a",
+        s4: "#e2ffe8", // soulfire
+        wood: "#24180f",
+        wood2: "#45301f",
+      };
+      const ORB_NOTES = [392, 523, 659, 784]; // G, C, E, G: a volley climbs as it comes
+      const bgLich = document.createElement("canvas");
+      bgLich.width = W;
+      bgLich.height = H;
+      const BRAZIERS = [
+        [34, 118],
+        [222, 118],
+      ];
+      const SIGIL_Y = 210;
+      const sigilRx = (k) => lerp(18, 118, easeOut(k));
+
+      function buildLichBackground() {
+        const zctx = bgLich.getContext("2d");
+        g = zctx;
+        const img = zctx.createImageData(W, H),
+          d32 = new Uint32Array(img.data.buffer);
+        const wall = [
+          "#080c0b",
+          "#0c1311",
+          "#111a16",
+          "#15211b",
+          "#192720",
+        ].map(pack);
+        const floor = ["#0c120f", "#101814", "#141e19", "#18241d"].map(pack);
+        for (let y = 0; y < H; y++)
+          for (let x = 0; x < W; x++) {
+            const th = (BAYER[(y & 3) * 4 + (x & 3)] + 0.5) / 16,
+              sky = y < 150,
+              cols = sky ? wall : floor;
+            const v =
+                (sky ? y / 150 : (y - 150) / (H - 150)) * (cols.length - 1),
+              i = Math.floor(v);
+            d32[y * W + x] =
+              cols[Math.min(cols.length - 1, v - i > th ? i + 1 : i)];
+          }
+        zctx.putImageData(img, 0, 0);
+        for (let y = 10; y < 150; y += 12) {
+          rect(0, y, W, 1, "#070b09");
+          for (let x = (y / 12) % 2 ? 0 : 10; x < W; x += 20)
+            rect(x, y + 1, 1, 11, "#070b09");
+        }
+        // catacomb niches, most of them still occupied
+        const rng = mulberry32(7);
+        for (const x of [52, 72, 184, 204])
+          for (const y of [40, 66, 92, 118]) {
+            rect(x - 7, y - 3, 14, 10, "#040605");
+            ell(x, y - 3, 7, 4, "#040605");
+            const r = rng();
+            if (r < 0.65) {
+              ell(x, y + 2, 3.5, 3, Z.b0);
+              ell(x - 1, y + 1, 2, 2, Z.b1);
+              rect(x - 2, y + 2, 1, 1, "#040605");
+              rect(x + 1, y + 2, 1, 1, "#040605");
+            }
+            if (r > 0.4) rect(x - 5, y + 5, 10, 1, Z.b0);
+          }
+        // the great arch behind him, stairs climbing into the dark
+        poly(
+          [
+            84, 150, 84, 64, 92, 40, 108, 22, 128, 12, 148, 22, 164, 40, 172,
+            64, 172, 150,
+          ],
+          "#1f2b25",
+        );
+        poly(
+          [
+            92, 150, 92, 66, 99, 46, 112, 31, 128, 22, 144, 31, 157, 46, 164,
+            66, 164, 150,
+          ],
+          "#020403",
+        );
+        for (const [x0, y0, x1, y1] of [
+          [84, 64, 92, 66],
+          [92, 40, 99, 46],
+          [108, 22, 112, 31],
+          [128, 12, 128, 22],
+          [148, 22, 144, 31],
+          [164, 40, 157, 46],
+          [172, 64, 164, 66],
+          [84, 100, 92, 100],
+          [164, 100, 172, 100],
+        ])
+          line(x0, y0, x1, y1, "#0b110e");
+        for (let i = 0; i < 5; i++)
+          rect(
+            98 + i * 4,
+            146 - i * 9,
+            60 - i * 8,
+            2,
+            mix("#16201b", "#040605", i / 4),
+          );
+        zctx.globalAlpha = 0.1;
+        circ(128, 96, 30, Z.s1);
+        zctx.globalAlpha = 1;
+        // braziers on stone pedestals
+        for (const [x, y] of BRAZIERS) {
+          rect(x - 6, y, 12, 58, "#18221e");
+          rect(x - 6, y, 2, 58, "#26342d");
+          rect(x - 9, y + 54, 18, 6, "#18221e");
+          rect(x - 9, y + 54, 18, 1, "#2e3c35");
+          poly(
+            [x - 11, y - 4, x + 11, y - 4, x + 7, y + 3, x - 7, y + 3],
+            "#2a3430",
+          );
+          rect(x - 11, y - 5, 22, 1, "#44524a");
+          rect(x - 7, y - 6, 14, 2, Z.s1);
+          zctx.globalAlpha = 0.07;
+          circ(x, y - 10, 28, Z.s2);
+          circ(x, y - 10, 15, Z.s2);
+          zctx.globalAlpha = 1;
+        }
+        // flagstones, bones and the odd skull
+        rect(0, 150, W, 1, "#060a08");
+        for (const y of [151, 154, 158, 163, 169, 177, 187, 199, 214]) {
+          rect(0, y, W, 1, "#0a0f0d");
+          rect(0, y + 1, W, 1, "#1d2923");
+        }
+        for (let k = -12; k <= 12; k++)
+          line(128 + k * 11, 151, 128 + k * 42, 224, "#0a0f0d");
+        zctx.globalAlpha = 0.06;
+        ell(128, 160, 64, 8, Z.s2);
+        zctx.globalAlpha = 1;
+        for (const [x, y, a, len] of [
+          [40, 206, 0.3, 14],
+          [70, 186, -0.5, 10],
+          [176, 210, 2.6, 16],
+          [226, 196, 0.9, 12],
+          [150, 220, -0.2, 12],
+        ]) {
+          const dx = (Math.cos(a) * len) / 2,
+            dy = (Math.sin(a) * len) / 2;
+          line(x - dx, y - dy, x + dx, y + dy, Z.b1);
+          rect(x - dx - 1, y - dy - 1, 2, 2, Z.b2);
+          rect(x + dx - 1, y + dy - 1, 2, 2, Z.b2);
+        }
+        for (const [x, y] of [
+          [58, 198],
+          [204, 190],
+        ]) {
+          ell(x, y, 5, 4, Z.b1);
+          ell(x - 1, y - 1, 3, 2, Z.b2);
+          rect(x - 3, y, 2, 1, "#040605");
+          rect(x + 1, y, 2, 1, "#040605");
+        }
+        for (let i = 0; i < 5; i++) {
+          line(0, i * 6, 10 + i * 6, 0, "#1c2621");
+          line(W - 1, i * 6, W - 11 - i * 6, 0, "#1c2621");
+        }
+        g = ctx;
+      }
+      function drawSigil(k, flare) {
+        const rx = sigilRx(k),
+          ry = rx * 0.18,
+          spin = game.time * 0.8,
+          col = flare || k > 0.75 ? Z.s3 : k > 0.4 ? Z.s2 : Z.s1;
+        ctx.globalAlpha = 0.35 + 0.55 * k;
+        for (const sc of [1, 0.74])
+          for (let i = 0; i < 96; i++) {
+            const a = (i / 96) * TAU;
+            rect(
+              128 + Math.cos(a) * rx * sc,
+              SIGIL_Y + Math.sin(a) * ry * sc,
+              2,
+              1,
+              col,
+            );
+          }
+        // a five-pointed star turning inside, runes running round between the rings
+        const pts = [];
+        for (let i = 0; i < 5; i++) {
+          const a = spin + (i * 2 * TAU) / 5;
+          pts.push([
+            128 + Math.cos(a) * rx * 0.74,
+            SIGIL_Y + Math.sin(a) * ry * 0.74,
+          ]);
+        }
+        for (let i = 0; i < 5; i++)
+          line(
+            pts[i][0],
+            pts[i][1],
+            pts[(i + 1) % 5][0],
+            pts[(i + 1) % 5][1],
+            col,
+          );
+        for (let i = 0; i < 10; i++) {
+          const a = -spin * 1.5 + (i / 10) * TAU,
+            x = 128 + Math.cos(a) * rx * 0.87,
+            y = SIGIL_Y + Math.sin(a) * ry * 0.87;
+          rect(x - 1, y, 3, 1, Z.s4);
+          rect(x, y - 1, 1, 3, Z.s4);
+        }
+        ctx.globalAlpha = 1;
+      }
+      // the spear's tell: a glowing crack races from his staff's foot toward you; it bursts when it arrives
+      function drawGroundCrack(k, s) {
+        const x0 = 128 + (lastPose ? lastPose.bx : 0) - 30,
+          y0 = 188,
+          x1 = PARRY_AT.spear(s)[0],
+          y1 = 228,
+          n = 10,
+          pts = [];
+        for (let i = 0; i <= n; i++) {
+          const j = i > 0 && i < n ? ((i * 37) % 7) - 3 : 0;
+          pts.push([
+            lerp(x0, x1, i / n) + j * (0.6 + i * 0.2),
+            lerp(y0, y1, i / n),
+          ]);
+        }
+        const reach = k * n;
+        for (let i = 0; i < n && i < reach; i++) {
+          const f = Math.min(1, reach - i),
+            [ax, ay] = pts[i],
+            bx = lerp(ax, pts[i + 1][0], f),
+            by = lerp(ay, pts[i + 1][1], f),
+            r0 = 1 + i * 0.4,
+            r1 = 1 + (i + f) * 0.4;
+          ctx.globalAlpha = 0.3;
+          limb(ax, ay, r0 * 3, bx, by, r1 * 3, Z.s2);
+          ctx.globalAlpha = 1;
+          limb(ax, ay, r0, bx, by, r1, Z.s3);
+          line(ax, ay, bx, by, Z.s4);
+          if (i + 1 >= reach) {
+            circ(bx, by, 3 + Math.sin(game.time * 40), Z.s3);
+            circ(bx, by, 1.5, "#ffffff");
+          }
+        }
+      }
+      // after the finale: the vault is torn open, moonlight pours in, rubble heaps at the walls
+      function drawRuin() {
+        poly(
+          [98, 0, 158, 0, 150, 9, 139, 5, 129, 13, 117, 6, 105, 10],
+          "#0b1324",
+        );
+        rect(112, 2, 1, 1, "#cfd8ff");
+        rect(141, 3, 1, 1, "#cfd8ff");
+        ctx.globalAlpha = 0.07;
+        poly([102, 0, 154, 0, 188, 196, 68, 196], "#cfe0ff");
+        ctx.globalAlpha = 1;
+        for (const [x, y, w, h] of [
+          [8, 184, 36, 14],
+          [32, 192, 22, 8],
+          [212, 186, 40, 12],
+          [196, 194, 20, 7],
+        ]) {
+          ell(x + w / 2, y + h / 2, w / 2, h / 2, "#26302a");
+          ell(x + w / 2 - 2, y + h / 2 - 2, w / 2 - 4, h / 2 - 3, "#3a463f");
+        }
+        for (const [a, b, c, e, f, h] of [
+          [60, 14, 70, 40, 64, 58],
+          [198, 24, 188, 50, 193, 70],
+          [100, 10, 94, 30, 98, 44],
+        ]) {
+          line(a, b, c, e, "#030504");
+          line(c, e, f, h, "#030504");
+        }
+      }
+      function lichBackdrop() {
+        const d = boss,
+          T = game.time;
+        for (const [x, y] of BRAZIERS) {
+          const fl = (k) =>
+            Math.sin(T * 13 + x + k) + Math.sin(T * 21 + k * 2) * 0.6;
+          circ(x + fl(0) * 0.6, y - 6, 5, Z.s1);
+          circ(x + fl(1) * 0.7, y - 9, 4, Z.s2);
+          circ(x + fl(2) * 0.7, y - 12 + fl(3) * 0.5, 2.2, Z.s3);
+          rect(x + R(fl(4) * 0.6), y - 16 + R(fl(5)), 1, 2, Z.s4);
+        }
+        if (d.crumbled) drawRuin();
+      }
+      function lichAmbient(dt) {
+        const d = boss,
+          p = lastPose;
+        // mist along the floor and sparks off the braziers
+        if (Math.random() < 5 * dt)
+          parts.push({
+            x: rand(-20, W),
+            y: rand(184, 222),
+            vx: rand(6, 14),
+            vy: rand(-2, 2),
+            g: 0,
+            drag: 0,
+            life: rand(2, 3.5),
+            t: 0,
+            size: 3,
+            cols: ["#0f2a1a", "#133420", "#0f2a1a", "#0b1f14"],
+            layer: 0,
+          });
+        for (const [x, y] of BRAZIERS)
+          if (Math.random() < 8 * dt)
+            parts.push({
+              x: x + rand(-3, 3),
+              y: y - 8,
+              vx: rand(-6, 6),
+              vy: rand(-40, -18),
+              g: -10,
+              drag: 0.5,
+              life: rand(0.4, 0.9),
+              t: 0,
+              size: 1,
+              cols: [Z.s4, Z.s3, Z.s2, Z.s1],
+              layer: 0,
+            });
+        if (!p || !p.weakAt) return;
+        const cx = 128 + p.bx;
+        // his robe frays into wisps
+        if (d.state !== "dying" && Math.random() < 20 * dt)
+          parts.push({
+            x: cx + rand(-38, 38),
+            y: 184 + p.by,
+            vx: rand(-6, 6),
+            vy: rand(6, 16),
+            g: 0,
+            drag: 0.5,
+            life: rand(0.5, 0.9),
+            t: 0,
+            size: 2,
+            cols: [Z.r3, Z.r2, Z.r1],
+            layer: 1,
+          });
+        // chanting: runes spiral up around him
+        if (
+          d.state === "windup" &&
+          d.moveKey === "curse" &&
+          Math.random() < 40 * dt
+        ) {
+          const a = rand(0, TAU);
+          parts.push({
+            x: cx + Math.cos(a) * 46,
+            y: 150 + p.by + Math.sin(a) * 10,
+            vx: -Math.sin(a) * 30,
+            vy: rand(-60, -30),
+            g: 0,
+            drag: 0.6,
+            life: rand(0.5, 0.9),
+            t: 0,
+            size: 1,
+            cols: [Z.s4, Z.s3, Z.s2, Z.s1],
+            layer: Math.sin(a) > 0 ? 1 : 0,
+          });
+        }
+        // the curse erupting from the sigil under you
+        if (
+          d.moveKey === "curse" &&
+          (d.state === "strike" || (d.state === "follow" && d.t < 0.3))
+        )
+          for (let i = 0; i < 3; i++)
+            parts.push({
+              x: rand(20, 236),
+              y: rand(200, 222),
+              vx: rand(-10, 10),
+              vy: rand(-160, -80),
+              g: 20,
+              drag: 0,
+              life: rand(0.3, 0.6),
+              t: 0,
+              size: R(rand(2, 4)),
+              cols: [Z.s4, Z.s3, Z.s2, Z.s1],
+              layer: 2,
+            });
+        // his phylactery shows while he chants (hit him!) and while he's dazed
+        tickWeakSpot(
+          dt,
+          (d.state === "windup" && d.move && d.move.channel) ||
+            (d.state === "stunned" && (d.t >= 0.2 || d.moveKey === "curse")),
+        );
+        // a parried orb flies back into him and bursts
+        if (
+          d.state === "stunned" &&
+          (d.moveKey === "orb" || d.moveKey === "doom") &&
+          !d.exploded &&
+          d.t >= 0.22
+        ) {
+          d.exploded = true;
+          const doom = d.moveKey === "doom",
+            big = doom ? (game.cine ? 2.5 : 1.6) : 0.6,
+            [wx, wy] = p.weakAt;
+          d.flash = game.cine ? 0.04 : 0.1;
+          d.flinch = 1.6;
+          burst(wx, wy, 40 * big, {
+            speed: [20, 110 * big],
+            life: [0.3, 0.7],
+            g: -20,
+            drag: 2,
+            cols: [Z.s4, Z.s3, Z.s2, Z.s1],
+            size: [1, 2 + big],
+          });
+          burst(wx, wy - 4, 10 * big, {
+            speed: [10, 40],
+            life: [0.8, 1.4],
+            g: -20,
+            drag: 1,
+            cols: ["#3a5a48", "#2a4436", "#1a2c22"],
+            size: [2, 4],
+            layer: 1,
+          });
+          if (doom) {
+            fx.push({ type: "ring", t: 0, dur: 0.25, x: wx, y: wy, r1: 110 });
+            // in the cinematic this plays at quarter speed, so keep the flash short in game time
+            flashScreen(Z.s3, game.cine ? 0.3 : 0.45, game.cine ? 0.06 : 0.12);
+            sfx.boom();
+          }
+          sfx.pop();
+          shake(3 * big, 0.3 * big);
+        }
+        // after the finale the crypt comes down: a storm of rubble, then a trickle
+        if (d.crumbled) {
+          d.crumbleT += dt;
+          if (Math.random() < (d.crumbleT < 2.5 ? 30 : 1.5) * dt) {
+            const front = Math.random() < 0.3;
+            parts.push({
+              x: rand(0, W),
+              y: -4,
+              vx: rand(-12, 12),
+              vy: rand(20, 70),
+              g: 320,
+              drag: 0,
+              life: 1.2,
+              t: 0,
+              size: R(rand(front ? 3 : 1, front ? 5 : 3)),
+              cols: ["#4a5a50", "#36443c", "#26302a"],
+              layer: front ? 2 : 0,
+            });
+          }
+          if (d.crumbleT < 2.5 && Math.random() < 6 * dt)
+            burst(rand(10, 246), rand(150, 175), 4, {
+              ang: -Math.PI / 2,
+              spread: 1.4,
+              speed: [10, 30],
+              life: [0.6, 1.2],
+              g: -4,
+              drag: 1,
+              cols: ["#3a4a40", "#2a362e"],
+              size: [2, 3],
+              layer: 0,
+            });
+        }
+        // dying: his soul streams out of him
+        if (d.state === "dying" && d.t > 0.6 && Math.random() < 0.8)
+          parts.push({
+            x: cx + rand(-26, 26),
+            y: rand(60, 170) + p.by + p.sink,
+            vx: rand(-10, 10),
+            vy: rand(-90, -40),
+            g: -20,
+            drag: 0.4,
+            life: rand(0.6, 1.2),
+            t: 0,
+            size: R(rand(1, 3)),
+            cols: [Z.s4, Z.s3, Z.s2, Z.s1],
+            layer: 1,
+          });
+      }
+      // parry flourishes: a bone spike shatters, an orb splashes off your shield
+      function lichParry(at) {
+        if (boss.moveKey === "spear")
+          burst(at[0], at[1] + 20, 26, {
+            speed: [60, 200],
+            life: [0.3, 0.7],
+            g: 400,
+            cols: [Z.b3, Z.b2, Z.b1],
+            size: [1, 3],
+          });
+        else
+          burst(at[0], at[1], 16, {
+            speed: [40, 140],
+            life: [0.2, 0.45],
+            g: 60,
+            drag: 1,
+            cols: [Z.s4, Z.s3, Z.s2],
+            size: [1, 2],
+          });
+      }
+      // a swing outside his openings meets a ward
+      function lichWard() {
+        const [x, y] =
+          lastPose && lastPose.weakAt ? lastPose.weakAt : [128, 104];
+        fx.push({ type: "ward", t: 0, dur: 0.3, x, y });
+        sfx.ward();
+      }
+      // the spell breaks: sparks off his chest, and the sigil under you shatters
+      function lichShatter(at) {
+        const d = boss,
+          rx = sigilRx(d.windup ? clamp(d.t / d.windup, 0, 1) : 1);
+        burst(at[0], at[1], 22, {
+          speed: [40, 160],
+          life: [0.2, 0.5],
+          g: 120,
+          cols: ["#ffffff", Z.s4, Z.s3],
+          size: [1, 2],
+        });
+        for (let i = 0; i < 28; i++) {
+          const a = rand(0, TAU);
+          parts.push({
+            x: 128 + Math.cos(a) * rx,
+            y: SIGIL_Y + Math.sin(a) * rx * 0.18,
+            vx: Math.cos(a) * rand(20, 80),
+            vy: rand(-150, -60),
+            g: 400,
+            drag: 0,
+            life: rand(0.4, 0.8),
+            t: 0,
+            size: R(rand(1, 3)),
+            cols: [Z.s4, Z.s3, Z.s2],
+            layer: 2,
+          });
+        }
+      }
+
+      function drawSoulOrb(x, y, r, skull) {
+        const T = game.time;
+        for (let i = 0; i < 10; i++) {
+          const a = (i / 10) * TAU + T * 6,
+            rr = r * (0.82 + 0.16 * Math.sin(T * 27 + i * 2.1));
+          circ(
+            x + Math.cos(a) * rr,
+            y + Math.sin(a) * rr,
+            r * 0.3,
+            i % 2 ? Z.s1 : Z.s2,
+          );
+        }
+        circ(x, y, r, Z.s1);
+        circ(x, y, r * 0.8, Z.s2);
+        circ(x - r * 0.08, y - r * 0.1, r * 0.55, Z.s3);
+        circ(x - r * 0.16, y - r * 0.2, r * 0.25, Z.s4);
+        if (skull && r > 7) {
+          // a screaming face in the big one
+          ell(x - r * 0.32, y - r * 0.05, r * 0.17, r * 0.22, Z.s0);
+          ell(x + r * 0.32, y - r * 0.05, r * 0.17, r * 0.22, Z.s0);
+          ell(x, y + r * 0.42, r * 0.16, r * 0.2, Z.s0);
+        }
+      }
+      function smallOrb(x, y, r) {
+        if (r < 0.5) return;
+        circ(x, y, r, Z.s1);
+        circ(x, y, r * 0.72, Z.s2);
+        rect(x - 1, y - 1, 1, 1, Z.s4);
+      }
+      function drawBoneSpike(x, tip) {
+        const b = 236;
+        const shape = [
+          x - 18,
+          b,
+          x - 10,
+          tip + 46,
+          x - 4,
+          tip + 12,
+          x,
+          tip,
+          x + 5,
+          tip + 16,
+          x + 11,
+          tip + 48,
+          x + 19,
+          b,
+        ];
+        poly(
+          shape.map((v, i) => (i % 2 ? v : v + (v < x ? -1 : 1))),
+          Z.r0,
+        );
+        poly(shape, Z.b2);
+        poly(
+          [
+            x + 1,
+            tip + 4,
+            x + 5,
+            tip + 16,
+            x + 11,
+            tip + 48,
+            x + 19,
+            b,
+            x + 4,
+            b,
+          ],
+          Z.b1,
+        );
+        line(x - 3, tip + 14, x - 12, b, Z.b3);
+        for (const [dy, w] of [
+          [30, 6],
+          [56, 10],
+          [84, 14],
+        ])
+          if (tip + dy < b) rect(x - w * 0.5, tip + dy, w, 1, Z.b0);
+        poly([x - 8, tip + 50, x - 17, tip + 38, x - 9, tip + 58], Z.b2);
+        poly([x + 9, tip + 64, x + 18, tip + 52, x + 11, tip + 72], Z.b1);
+        ctx.globalAlpha = 0.35;
+        ell(x, 222, 30, 6, Z.s2);
+        ctx.globalAlpha = 1;
+      }
+      function drawLichStaff(gx, gy, a) {
+        const dx = Math.cos(a),
+          dy = Math.sin(a),
+          tx = gx + dx * 58,
+          ty = gy + dy * 58,
+          fx0 = gx - dx * 70,
+          fy0 = gy - dy * 70;
+        limb(fx0, fy0, 1.5, tx, ty, 2, Z.wood);
+        line(fx0 - dy, fy0 + dx, tx - dy, ty + dx, Z.wood2);
+        for (const k of [0.25, 0.55])
+          rect(lerp(fx0, tx, k) - 2, lerp(fy0, ty, k), 5, 1, Z.au0);
+        // bone talons cradling a soul gem
+        const hx = tx + dx * 7,
+          hy = ty + dy * 7,
+          nx = -dy,
+          ny = dx;
+        for (const s of [-1, 1]) {
+          const mx = tx + nx * s * 6 + dx * 3,
+            my = ty + ny * s * 6 + dy * 3;
+          line(tx, ty, mx, my, Z.b2);
+          line(
+            mx,
+            my,
+            hx + nx * s * 2 + dx * 6,
+            hy + ny * s * 2 + dy * 6,
+            Z.b2,
+          );
+        }
+        circ(hx, hy, 4.5, Z.s1);
+        circ(hx, hy, 3.3, Z.s2);
+        circ(hx - 1, hy - 1, 1.4, Z.s4);
+      }
+      function lichArm(sx, sy, hx, hy, s) {
+        const lift = clamp((sy - hy) / 50, 0, 1),
+          ex = lerp((sx + hx) / 2 + s * 9, sx + s * 18, lift),
+          ey = lerp((sy + hy) / 2 + 6, sy - 12, lift);
+        limb(sx, sy, 7, ex, ey, 6, Z.r2);
+        limb(ex, ey, 6, hx, hy, 8, Z.r2);
+        limb(sx + s, sy - 1, 2.5, ex + s, ey - 1, 2, Z.r3);
+        ell(hx, hy, 6, 4, Z.r0);
+      }
+      function boneHand(x, y, s, open) {
+        rect(x - 2, y - 2, 5, 4, Z.b2);
+        rect(x - 2, y - 2, 5, 1, Z.b3);
+        for (let i = 0; i < 4; i++) {
+          const fx0 = x - 2 + i * 1.6;
+          if (open) line(fx0, y - 2, fx0 + (i - 1.5) * 1.5, y - 7, Z.b2);
+          else rect(fx0, y + 2, 1, 2, Z.b1);
+        }
+        line(x + s * 3, y, x + s * 5, y - 2, Z.b2);
+      }
+      function drawSkull(hx, hy, p) {
+        const T = game.time,
+          j = p.jaw * 4;
+        // the jaw goes first so an open mouth shows dark behind the teeth
+        if (j > 0.5) rect(hx - 5, hy + 10, 10, j + 1, Z.r0);
+        poly(
+          [
+            hx - 7,
+            hy + 11 + j,
+            hx + 7,
+            hy + 11 + j,
+            hx + 5,
+            hy + 17 + j,
+            hx - 5,
+            hy + 17 + j,
+          ],
+          Z.b1,
+        );
+        rect(hx - 5, hy + 11 + j, 10, 2, Z.b3);
+        for (let i = 0; i < 4; i++)
+          rect(hx - 3 + i * 2, hy + 11 + j, 1, 2, Z.b1);
+        ell(hx, hy - 3, 11, 11, Z.b2);
+        poly(
+          [hx - 10, hy - 1, hx + 10, hy - 1, hx + 7, hy + 10, hx - 7, hy + 10],
+          Z.b2,
+        );
+        ell(hx - 3, hy - 6, 6, 5, Z.b3);
+        poly(
+          [
+            hx + 5,
+            hy - 11,
+            hx + 11,
+            hy - 3,
+            hx + 7,
+            hy + 10,
+            hx + 4,
+            hy + 10,
+            hx + 6,
+            hy,
+          ],
+          Z.b1,
+        );
+        rect(hx - 6, hy + 6, 3, 1, Z.b1);
+        rect(hx + 3, hy + 6, 3, 1, Z.b0);
+        rect(hx - 5, hy + 9, 10, 2, Z.b3);
+        for (let i = 0; i < 4; i++) rect(hx - 3 + i * 2, hy + 9, 1, 2, Z.b1);
+        ell(hx - 5, hy + 1, 3.5, 3, Z.r0);
+        ell(hx + 5, hy + 1, 3.5, 3, Z.r0);
+        poly([hx, hy + 4, hx + 2, hy + 8, hx - 2, hy + 8], Z.r0);
+        if (p.cracked) {
+          line(hx + 2, hy - 13, hx + 4, hy - 7, Z.b0);
+          line(hx + 4, hy - 7, hx + 2, hy - 3, Z.b0);
+          line(hx + 4, hy - 7, hx + 8, hy - 6, Z.b0);
+        }
+        if (p.eyes !== "off")
+          for (const s of [-1, 1]) {
+            const x = hx + s * 5,
+              y = hy + 1,
+              f = Math.sin(T * 17 + s * 2);
+            if (p.eyes === "dim") {
+              rect(x, y, 1, 1, Z.s1);
+              continue;
+            }
+            if (p.eyes === "flare" || (p.cracked && s > 0))
+              poly([x - 2, y, x + 2, y, x + f, y - 8 - f * 2], Z.s2);
+            else rect(x, y - 3 + R(f), 1, 3, Z.s2);
+            rect(x - 1, y - 1, 2, 2, Z.s3);
+            rect(x, y - 1, 1, 1, Z.s4);
+          }
+        // crown
+        const cy = hy - 11;
+        rect(hx - 10, cy - 1, 20, 4, Z.au1);
+        rect(hx - 10, cy - 1, 20, 1, Z.au2);
+        rect(hx - 10, cy + 2, 20, 1, Z.au0);
+        for (let k = -2; k <= 2; k++) {
+          const x = hx + k * 4.5,
+            h = k === 0 ? 9 : Math.abs(k) === 1 ? 5 : 7;
+          poly([x - 2, cy - 1, x + 2, cy - 1, x, cy - 1 - h], Z.au1);
+          rect(x, cy - h, 1, 1, Z.au2);
+        }
+        rect(hx - 1, cy, 3, 2, Z.s3);
+      }
+      function orbitOrbs(p, front) {
+        const cx = 128 + p.bx;
+        for (let i = 0; i < p.orbit; i++) {
+          const a = game.time * 2.6 + (i / p.orbit) * TAU,
+            s = Math.sin(a);
+          if (s > 0 === front)
+            smallOrb(
+              cx + Math.cos(a) * 42,
+              92 + p.by + s * 10,
+              4 * p.orbitGrow,
+            );
+        }
+      }
+      function drawLichBody(p) {
+        const cx = 128 + p.bx,
+          by = p.by,
+          T = game.time,
+          [hx, hy] = p.head,
+          sw = Math.sin(T * 1.3) * 3,
+          hem = 174 + by;
+        orbitOrbs(p, false);
+        // high collar behind his head
+        for (const s of [-1, 1]) {
+          poly(
+            [cx + s * 10, 88 + by, cx + s * 36, 40 + by, cx + s * 28, 88 + by],
+            Z.r2,
+          );
+          poly(
+            [cx + s * 13, 86 + by, cx + s * 32, 48 + by, cx + s * 25, 86 + by],
+            Z.r1,
+          );
+          line(cx + s * 10, 88 + by, cx + s * 36, 40 + by, Z.au1);
+        }
+        // robe, fraying away to nothing where his legs should be
+        const robe = [
+          cx - 22,
+          86 + by,
+          cx + 22,
+          86 + by,
+          cx + 30,
+          118 + by,
+          cx + 40 + sw * 0.4,
+          hem,
+        ];
+        for (let i = 0; i <= 12; i++)
+          robe.push(
+            lerp(cx + 42 + sw, cx - 42 + sw, i / 12),
+            hem + (i % 2 ? 2 : 13) + Math.sin(T * 3 + i * 1.7) * 2,
+          );
+        robe.push(cx - 40 + sw * 0.4, hem, cx - 30, 118 + by);
+        poly(robe, Z.r1);
+        poly(
+          [
+            cx - 22,
+            86 + by,
+            cx - 10,
+            88 + by,
+            cx - 16 + sw * 0.6,
+            hem + 10,
+            cx - 36 + sw * 0.5,
+            hem + 6,
+            cx - 30,
+            118 + by,
+          ],
+          Z.r2,
+        );
+        line(cx - 6, 128 + by, cx - 10 + sw, hem + 10, Z.r0);
+        line(cx + 12, 126 + by, cx + 20 + sw, hem + 8, Z.r0);
+        line(cx + 26, 122 + by, cx + 34 + sw, hem + 4, Z.r0);
+        // open ribcage, his soul caged in the phylactery behind the ribs
+        poly(
+          [
+            cx - 14,
+            86 + by,
+            cx + 14,
+            86 + by,
+            cx + 7,
+            126 + by,
+            cx - 7,
+            126 + by,
+          ],
+          Z.r0,
+        );
+        line(cx - 14, 86 + by, cx - 7, 126 + by, Z.au0);
+        line(cx + 14, 86 + by, cx + 7, 126 + by, Z.au0);
+        const gy = 104 + by,
+          lit = p.weak > 0;
+        poly(
+          [cx, gy - 7, cx + 5, gy, cx, gy + 8, cx - 5, gy],
+          lit ? Z.s3 : Z.s1,
+        );
+        poly(
+          [cx, gy - 5, cx + 3, gy, cx, gy + 5, cx - 3, gy],
+          lit ? Z.s4 : Z.s2,
+        );
+        rect(cx - 1, gy - 4, 1, 2, Z.s4);
+        rect(cx, 88 + by, 1, 8, Z.b1);
+        rect(cx, 112 + by, 1, 12, Z.b1);
+        for (let i = 0; i < 4; i++) {
+          const y = 91 + i * 7 + by,
+            w = 12 - i * 1.6;
+          for (const s of [-1, 1]) {
+            line(cx + s * 2, y, cx + s * w * 0.6, y + 1, Z.b2);
+            line(cx + s * w * 0.6, y + 1, cx + s * w, y + 4, Z.b2);
+          }
+        }
+        // sash and tabard
+        rect(cx - 27, 124 + by, 54, 5, Z.r3);
+        rect(cx - 27, 124 + by, 54, 1, Z.au0);
+        const tw = sw * 0.5;
+        poly(
+          [
+            cx - 7,
+            129 + by,
+            cx + 7,
+            129 + by,
+            cx + 6 + tw,
+            166 + by,
+            cx + tw,
+            172 + by,
+            cx - 6 + tw,
+            166 + by,
+          ],
+          Z.r3,
+        );
+        line(cx - 6 + tw, 166 + by, cx + tw, 172 + by, Z.au1);
+        line(cx + tw, 172 + by, cx + 6 + tw, 166 + by, Z.au1);
+        // a death rune stitched on the tabard
+        const rx0 = cx + tw * 0.6;
+        rect(rx0 - 1, 140 + by, 2, 14, Z.au0);
+        line(rx0, 145 + by, rx0 - 4, 151 + by, Z.au0);
+        line(rx0, 145 + by, rx0 + 4, 151 + by, Z.au0);
+        rect(cx - 3, 122 + by, 7, 9, Z.au1);
+        rect(cx - 1, 124 + by, 3, 5, Z.s2);
+        // shoulder mantles, a little skull on each
+        for (const s of [-1, 1]) {
+          const x = cx + s * 27,
+            y = 90 + by;
+          ell(x, y + 2, 14, 8, Z.r3);
+          ell(x, y + 4, 12, 5, Z.r2);
+          ell(x, y - 3, 6, 5, Z.b2);
+          ell(x - s, y - 4, 4, 3, Z.b3);
+          rect(x - 4, y - 3, 3, 2, Z.r0);
+          rect(x + 1, y - 3, 3, 2, Z.r0);
+          rect(x - 3, y + 1, 6, 1, Z.b1);
+        }
+        // staff on your left, casting hand on your right
+        lichArm(cx - 22, 94 + by, p.gx, p.gy, -1);
+        lichArm(cx + 22, 94 + by, p.hx, p.hy, 1);
+        drawLichStaff(p.gx, p.gy, p.ga);
+        boneHand(p.gx, p.gy, -1, false);
+        boneHand(p.hx, p.hy - 3, 1, true);
+        if (p.palm > 0.4) {
+          const f = Math.sin(T * 19) * 1.5;
+          poly(
+            [
+              p.hx - 3,
+              p.hy - 8,
+              p.hx + 3,
+              p.hy - 8,
+              p.hx + f,
+              p.hy - 12 - 6 * p.palm,
+            ],
+            Z.s2,
+          );
+          circ(p.hx, p.hy - 9, 2, Z.s3);
+        }
+        drawSkull(hx, hy, p);
+        orbitOrbs(p, true);
+        if (p.charge) smallOrb(p.charge[0], p.charge[1], p.charge[2]);
+        if (p.stars > 0)
+          for (let i = 0; i < 3; i++) {
+            if (p.stars < i / 3 + 0.1) continue;
+            const an = T * 4 + (i * TAU) / 3;
+            star(
+              hx + Math.cos(an) * 24,
+              hy - 30 + Math.sin(an) * 5,
+              2,
+              C.f1,
+              C.f0,
+            );
+          }
+      }
+      function lichFront(p) {
+        const d = boss,
+          T = game.time;
+        // the floor tells sit between him and you, so they draw over his shadow
+        if (d.moveKey === "curse") {
+          if (d.state === "windup") drawSigil(clamp(d.t / d.windup, 0, 1));
+          else if (d.state === "strike" || (d.state === "follow" && d.t < 0.35))
+            drawSigil(1, true);
+        }
+        if (
+          d.moveKey === "spear" &&
+          (d.state === "windup" || d.state === "strike")
+        )
+          drawGroundCrack(
+            d.state === "strike" ? 1 : clamp(d.t / d.windup, 0, 1) ** 1.6,
+            d.side,
+          );
+        // soft light off his palm, his staff and a charging orb
+        ctx.globalAlpha = 0.16 * p.palm;
+        circ(p.hx, p.hy - 8, 8 + 2 * Math.sin(T * 9), Z.s2);
+        ctx.globalAlpha = 0.14;
+        circ(p.staffTop[0], p.staffTop[1], 8, Z.s2);
+        if (p.charge) {
+          ctx.globalAlpha = 0.3;
+          circ(p.charge[0], p.charge[1], p.charge[2] * 2.2, Z.s2);
+        }
+        ctx.globalAlpha = 1;
+        if (p.weak > 0) drawWeakGlow(p);
+        // the curse bursting out of the sigil under you
+        if (
+          d.moveKey === "curse" &&
+          (d.state === "strike" || (d.state === "follow" && d.t < 0.35))
+        ) {
+          const fade = d.state === "strike" ? 0 : d.t / 0.35;
+          ctx.globalAlpha = 0.8 * (1 - fade);
+          for (let i = 0; i < 12; i++) {
+            const a = ((i + 0.5) / 12) * Math.PI,
+              x = 128 + Math.cos(a) * 112,
+              y = SIGIL_Y + Math.sin(a) * 20,
+              h = (50 + 26 * Math.sin(T * 23 + i * 1.9)) * (1 - 0.5 * fade),
+              f = Math.sin(T * 17 + i) * 4;
+            poly([x - 7, y, x + 7, y, x + f, y - h], Z.s2);
+            poly([x - 3, y, x + 3, y, x + f * 0.6, y - h * 0.6], Z.s4);
+          }
+          ctx.globalAlpha = 1;
+        }
+        if (p.spike) drawBoneSpike(p.spike.x, p.spike.tip);
+        if (p.shot) {
+          const [x, y, r, skull] = p.shot;
+          drawSoulOrb(x, y, r, skull);
+          if (d.state === "strike") {
+            ctx.globalAlpha = 0.4;
+            for (let i = 0; i < 10; i++) {
+              const an = (i / 10) * TAU,
+                r0 = r * 1.2 + 4;
+              line(
+                x + Math.cos(an) * r0,
+                y + Math.sin(an) * r0,
+                x + Math.cos(an) * (r0 + 14),
+                y + Math.sin(an) * (r0 + 14),
+                "#ffffff",
+              );
+            }
+            ctx.globalAlpha = 1;
+          }
+        }
+      }
+
+      function lichPose() {
+        const d = boss,
+          T = game.time,
+          st = d.state,
+          mk = d.moveKey,
+          mode = game.mode,
+          m = d.side;
+        const p = {
+          bx: Math.sin(T * 0.7) * 2,
+          by: -4 + Math.sin(T * 1.5) * 2.5,
+          sink: 0,
+          hxo: 0,
+          hyo: Math.sin(T * 1.5 + 0.5) * 0.8,
+          eyes: d.raged ? "flare" : "normal",
+          jaw: 0,
+          palm: 0.2,
+          stars: 0,
+          orbit: 0,
+          orbitGrow: 1,
+          charge: null,
+          shot: null,
+          spike: null,
+          weak: 0,
+          weakT: d.weakT || 0,
+          urgent: 0,
+          cracked: !!d.crumbled,
+        };
+        // staff grip [x from centre, y, angle] and casting hand [x from centre, y]
+        const SG = [-32, 116, -1.62],
+          CH = [30, 118],
+          PLANT = [-30, 118, -1.57];
+        const to = (a, b, k) => a.map((v, i) => lerp(v, b[i], k));
+        let G = SG,
+          hand = CH,
+          chargeK = null,
+          shotT = null,
+          doomK = null,
+          away = null,
+          back = null,
+          spikeK = null;
+        // orbs still circling him, waiting their turn in the volley
+        const pending = () => {
+          let n = 0;
+          while (d.queue[n] && d.queue[n].key === "orb" && d.queue[n].n > 0)
+            n++;
+          return n;
+        };
+        const roar = (r) => {
+          G = to(G, [-46, 96, -1.95], r);
+          hand = to(hand, [50, 80], r);
+          p.hyo -= 3 * r;
+          p.jaw = Math.max(p.jaw, r);
+          p.hxo += Math.sin(T * 40) * 0.6 * r;
+          p.palm = Math.max(p.palm, r);
+          if (r > 0.3) p.eyes = "flare";
+        };
+        const cackle = (r) => {
+          p.jaw = Math.abs(Math.sin(T * 24)) * r;
+          p.hyo -= Math.abs(Math.sin(T * 12)) * 2 * r;
+        };
+        const daze = (b) => {
+          G = to(G, [-38, 132, -1.95], b);
+          hand = to(hand, [28, 134], b);
+          p.by += 8 * b;
+          p.hyo += 5 * b;
+          p.hxo += Math.sin(T * 5) * 4 * b;
+          p.jaw = Math.max(p.jaw, 0.4 * b);
+          p.stars = b;
+          p.palm *= 1 - b;
+          if (b > 0.3) p.eyes = "dim";
+        };
+
+        if (mode === "intro") {
+          // rises out of the floor, eyes kindling
+          const u = game.modeT / 1.9;
+          p.by += 46 * (1 - easeOut(clamp(u / 0.55, 0, 1)));
+          roar(smooth(0.3, 0.45, u) * (1 - smooth(0.7, 0.9, u)));
+          if (u < 0.3) p.eyes = "off";
+        } else if (mode === "loseAnim" || mode === "lose") {
+          roar(smooth(0, 0.3, game.modeT) * 0.6);
+          cackle(1);
+        } else if (st === "rageRoar")
+          roar(smooth(0, 0.2, d.t / 1.3) * (1 - smooth(0.8, 1, d.t / 1.3)));
+        else if (st === "snarl") {
+          cackle(1);
+          hand = [34, 100];
+          p.palm = 0.6;
+          p.eyes = "flare";
+        } else if (st === "windup") {
+          const t = clamp(d.t / d.windup, 0, 1),
+            e = easeOut(clamp(t / 0.5, 0, 1));
+          if (mk === "orb") {
+            // the first orb of a volley conjures the rest; each one swells where it's launched from
+            p.orbit = pending();
+            if (d.n === 0) p.orbitGrow = easeOut(clamp(t / 0.6, 0, 1));
+            if (m < 0) G = to(SG, [-26, 104, -1.25], e);
+            else hand = to(CH, [40, 96], e);
+            p.palm = m > 0 ? 0.5 + 0.5 * e : 0.3;
+            chargeK = e;
+            if (t > 0.5) p.eyes = "flare";
+          } else if (mk === "spear") {
+            // staff raised, then driven into the floor
+            G = to(
+              to(SG, [-30, 96, -1.57], easeOut(clamp(t / 0.25, 0, 1))),
+              PLANT,
+              smooth(0.25, 0.35, t),
+            );
+            hand = to(CH, [38, 82], e);
+            p.palm = e;
+            if (t > 0.4) p.eyes = "flare";
+          } else if (mk === "curse") {
+            // the chant: arms up, jaw working, trembling as it nears completion
+            G = to(SG, [-30, 84, -1.57], e);
+            hand = to(CH, [30, 56], e);
+            p.palm = 1;
+            p.hyo -= 3 * e;
+            p.jaw = 0.35 + 0.65 * Math.abs(Math.sin(T * 16));
+            p.bx += Math.sin(T * 50) * 1.2 * smooth(0.6, 1, t);
+            p.eyes = "flare";
+            p.weak = clamp(p.weakT / 0.08, 0, 1);
+            p.urgent = t;
+          } else if (mk === "doom") {
+            G = to(SG, [-24, 72, -1.35], e);
+            hand = to(CH, [18, 46], e);
+            p.palm = 1;
+            p.hyo -= 2 * e;
+            p.jaw = 0.5 * e;
+            p.eyes = "flare";
+            doomK = easeOut(t);
+          }
+        } else if (st === "strike") {
+          const t = clamp(d.t / d.move.window, 0, 1);
+          p.eyes = "flare";
+          p.jaw = 0.8;
+          if (mk === "orb") {
+            if (m < 0) G = [-24, 102, -1.15];
+            else hand = [44, 94];
+            p.orbit = pending();
+            shotT = t;
+          } else if (mk === "spear") {
+            G = PLANT;
+            hand = [36, 118];
+            spikeK = t;
+          } else if (mk === "curse") {
+            G = PLANT;
+            hand = [34, 122];
+            p.jaw = 1;
+          } else if (mk === "doom") {
+            G = [-30, 100, -1.2];
+            hand = [36, 96];
+            shotT = t;
+          }
+        } else if (st === "stunned" || st === "deflect") {
+          // mid-volley a parried orb is batted aside; the last one goes back into him
+          if (mk === "orb" || mk === "doom") {
+            if (st === "deflect") away = clamp(d.t / d.deflectDur, 0, 1);
+            else if (!d.exploded) back = clamp(d.t / 0.22, 0, 1);
+          }
+          if (mk === "orb") p.orbit = pending();
+          if (st === "stunned") {
+            daze(easeOut(clamp((d.t - 0.1) / 0.3, 0, 1)));
+            p.weak = clamp(p.weakT / 0.08, 0, 1);
+          } else p.by += 4 * (1 - clamp(d.t / d.deflectDur, 0, 1));
+        } else if (st === "recover") {
+          daze(1 - easeOut(clamp(d.t / 0.35, 0, 1)));
+          p.weak = 1 - clamp(d.t / 0.2, 0, 1);
+        } else if (st === "follow") {
+          const u = clamp(d.t / d.followDur, 0, 1);
+          if (mk === "orb") p.orbit = pending();
+          if (mk === "spear" && u < 0.5) spikeK = 1 + u;
+          if (mk === "curse") p.jaw = 1 - u;
+        } else if (st === "dying") {
+          const u = d.t;
+          if (u < 0.6) {
+            daze(1);
+            p.bx += Math.sin(u * 60) * 3 * (1 - u / 0.6);
+          } else {
+            const k = easeOut(clamp((u - 0.6) / 0.5, 0, 1)),
+              c = clamp((u - 1.6) / 1.4, 0, 1);
+            roar(k * (1 - c));
+            p.eyes = c > 0.5 ? "off" : "flare";
+            p.sink = 130 * c * c;
+          }
+        }
+
+        if (d.flinch > 0) {
+          p.bx += d.flinchDir * 6 * d.flinch;
+          p.hxo += d.flinchDir * 3 * d.flinch;
+          p.hyo += 2 * d.flinch;
+        }
+        const cx = 128 + p.bx;
+        p.G = G;
+        p.gx = cx + G[0];
+        p.gy = G[1] + p.by;
+        p.ga = G[2];
+        p.hx = cx + hand[0];
+        p.hy = hand[1] + p.by;
+        p.head = [cx + p.hxo, 60 + p.by + p.hyo];
+        p.weakAt = [cx, 104 + p.by];
+        p.staffTop = [p.gx + Math.cos(p.ga) * 65, p.gy + Math.sin(p.ga) * 65];
+        // where things fly from: volley orbs leave the staff head (your left) or his palm (your right),
+        // doom gathers above his crown
+        const launch = m < 0 ? p.staffTop : [p.hx, p.hy - 9],
+          crown = [cx + 2, 26 + p.by],
+          at = mk && PARRY_AT[mk] ? PARRY_AT[mk](m) : [128, 128];
+        if (chargeK !== null)
+          p.charge = [
+            launch[0],
+            launch[1],
+            2 + 3.5 * chargeK + Math.sin(T * 30) * 0.6 * chargeK,
+          ];
+        if (doomK !== null)
+          p.shot = [crown[0], crown[1], lerp(2, 20, doomK), true];
+        if (shotT !== null) {
+          const u = shotT ** (mk === "doom" ? 1.3 : 1.4),
+            from = mk === "doom" ? crown : launch;
+          p.shot = [
+            lerp(from[0], at[0], u),
+            lerp(from[1], at[1], u),
+            mk === "doom" ? lerp(20, 66, u ** 1.5) : lerp(5, 24, u ** 1.3),
+            mk === "doom",
+          ];
+        }
+        if (away !== null) {
+          const e = easeOut(away),
+            dir = at[0] < 128 ? -1 : 1;
+          p.shot = [
+            at[0] + dir * 230 * e,
+            at[1] - 80 * e,
+            20 * (1 - 0.4 * e),
+            false,
+          ];
+        }
+        if (back !== null) {
+          const e = back ** 1.5,
+            doom = mk === "doom";
+          p.shot = [
+            lerp(at[0], p.weakAt[0], e),
+            lerp(at[1], p.weakAt[1], e),
+            lerp(doom ? 46 : 18, doom ? 12 : 5, e),
+            doom,
+          ];
+        }
+        if (spikeK !== null)
+          p.spike = {
+            x: at[0],
+            tip:
+              spikeK <= 1
+                ? lerp(236, 112, easeOut(clamp(spikeK * 1.6, 0, 1)))
+                : lerp(112, 236, easeOut((spikeK - 1) * 2)),
+          };
+        return p;
+      }
+
       /* ================= Player drawing ================= */
       const SWING = 0.26;
       const SWING_KEYS = [
@@ -3809,6 +5113,21 @@
                 cols: FIRE,
                 layer: 2,
               });
+          if (f.type === "curse" && f.t < 0.7)
+            for (let i = 0; i < 5; i++)
+              parts.push({
+                x: rand(0, W),
+                y: H + 2,
+                vx: rand(-14, 14),
+                vy: rand(-190, -90),
+                g: 30,
+                drag: 0,
+                life: rand(0.35, 0.8),
+                t: 0,
+                size: R(rand(2, 5)),
+                cols: [Z.s4, Z.s3, Z.s2, Z.s1],
+                layer: 2,
+              });
         }
         fx = fx.filter((f) => f.t < f.dur);
       }
@@ -3899,6 +5218,41 @@
               lens(x0, y, x1, y + 6, w * 0.6, "#e0303c");
               lens(x0, y, x1, y + 6, w * 0.2, "#ffffff");
             }
+          } else if (f.type === "hex") {
+            // a soul orb bursting on you
+            const prog = clamp(f.t / 0.08, 0, 1);
+            ctx.globalAlpha = 1 - smooth(0.4, 1, u);
+            for (let i = 0; i < 11; i++) {
+              const a = (i / 11) * TAU + 0.5,
+                r = (36 + (i % 3) * 20) * prog,
+                x = 122 + Math.cos(a) * r,
+                y = 124 + Math.sin(a) * r;
+              lens(122, 124, x, y, 5, Z.s1);
+              lens(122, 124, x, y, 2.5, Z.s3);
+            }
+            circ(122, 124, 14 * (1 - u), Z.s4);
+          } else if (f.type === "curse") {
+            ctx.globalAlpha = 0.6 * (1 - u) ** 2;
+            rect(0, 0, W, H, Z.s1);
+          } else if (f.type === "ward") {
+            // his barrier, flaring where your sword met it
+            const r = 24 + 8 * easeOut(u),
+              pts = [];
+            for (let i = 0; i < 6; i++) {
+              const a = (i / 6) * TAU + Math.PI / 6;
+              pts.push(f.x + Math.cos(a) * r, f.y + Math.sin(a) * r * 1.15);
+            }
+            ctx.globalAlpha = 0.18 * (1 - u);
+            poly(pts, Z.s2);
+            ctx.globalAlpha = 0.9 * (1 - u);
+            for (let i = 0; i < 6; i++)
+              line(
+                pts[i * 2],
+                pts[i * 2 + 1],
+                pts[(i * 2 + 2) % 12],
+                pts[(i * 2 + 3) % 12],
+                Z.s3,
+              );
           }
           ctx.globalAlpha = 1;
         }
@@ -4015,6 +5369,7 @@
         gn.connect(master);
         o.start(t);
         o.stop(t + dur + 0.05);
+        return gn;
       }
       function hiss(
         dur,
@@ -4043,6 +5398,18 @@
         gn.connect(master);
         src.start(t, Math.random() * 0.5);
         src.stop(t + dur + 0.05);
+        return gn;
+      }
+      // cut sounds short (a broken spell's chant)
+      function silence(gains) {
+        if (!ac || !gains) return;
+        const t = ac.currentTime;
+        for (const gn of gains) {
+          if (!gn) continue;
+          gn.gain.cancelScheduledValues(t);
+          gn.gain.setValueAtTime(Math.max(gn.gain.value, 0.0001), t);
+          gn.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
+        }
       }
       const sfx = {
         clawWindup() {
@@ -4243,6 +5610,83 @@
           hiss(0.5, 0.35, 600, 80, "lowpass");
           tone(90, 30, 0.5, "square", 0.15);
         },
+        // each orb in a volley rings its own note, so you can parry them by ear
+        orbWindup(d) {
+          const f = ORB_NOTES[boss.n % ORB_NOTES.length];
+          tone(f * 0.5, f, d, "triangle", 0.07, 0, true);
+          hiss(d, 0.04, f * 2, f * 4, "bandpass", 0, true, 3);
+        },
+        orbStrike() {
+          const f = ORB_NOTES[boss.n % ORB_NOTES.length];
+          tone(f, f * 2, 0.14, "square", 0.08);
+          tone(f * 1.5, f * 1.5, 0.2, "triangle", 0.07);
+          hiss(0.16, 0.18, 1500, 4000, "bandpass", 0, false, 1.4);
+        },
+        spearWindup(d) {
+          tone(160, 120, 0.12, "square", 0.08);
+          tone(45, 70, d, "sawtooth", 0.09, 0, true);
+          hiss(d, 0.12, 200, 900, "lowpass", 0, true);
+        },
+        spearStrike() {
+          hiss(0.25, 0.34, 3500, 600, "bandpass", 0, false, 1.2);
+          tone(260, 70, 0.25, "square", 0.12);
+        },
+        // the chant: returned so an interrupt can cut it off
+        curseWindup(d) {
+          return [
+            tone(110, 165, d, "sawtooth", 0.07, 0, true),
+            tone(111.5, 168, d, "sawtooth", 0.06, 0, true),
+            tone(55, 82, d, "square", 0.04, 0, true),
+            hiss(d, 0.08, 600, 2400, "bandpass", 0, true, 4),
+          ];
+        },
+        curseStrike() {
+          hiss(0.6, 0.35, 300, 2500, "bandpass", 0, false, 1);
+          tone(80, 40, 0.6, "sawtooth", 0.16);
+          tone(220, 110, 0.5, "square", 0.06);
+        },
+        doomWindup(d) {
+          tone(40, 120, d, "sawtooth", 0.12, 0, true);
+          tone(80, 240, d, "triangle", 0.06, 0, true);
+          hiss(d, 0.14, 300, 3000, "bandpass", 0, true, 2);
+        },
+        doomStrike() {
+          hiss(0.5, 0.36, 2000, 200, "lowpass");
+          tone(160, 50, 0.5, "sawtooth", 0.14);
+        },
+        shatter() {
+          [2200, 2900, 3500, 4300].forEach((f, i) =>
+            tone(f, f * 0.9, 0.18, "triangle", 0.06, 0.015 * i),
+          );
+          hiss(0.25, 0.3, 6000, 0, "highpass");
+        },
+        pop() {
+          tone(700, 200, 0.18, "square", 0.08);
+          hiss(0.2, 0.2, 2500, 400, "bandpass");
+        },
+        ward() {
+          tone(880, 660, 0.16, "triangle", 0.07);
+          hiss(0.1, 0.08, 4000, 0, "highpass");
+        },
+        cackle(delay = 0) {
+          [0, 0.11, 0.22, 0.33, 0.44].forEach((t, i) => {
+            tone(330 - i * 18, 280 - i * 18, 0.08, "square", 0.07, delay + t);
+            hiss(0.06, 0.08, 1800, 0, "bandpass", delay + t);
+          });
+        },
+        shriek(delay = 0) {
+          tone(620, 300, 0.9, "sawtooth", 0.09, delay);
+          tone(640, 310, 0.9, "sawtooth", 0.07, delay);
+          hiss(0.9, 0.2, 3000, 800, "bandpass", delay, false, 2);
+        },
+        wail(delay = 0) {
+          tone(520, 70, 1.6, "sawtooth", 0.1, delay);
+          hiss(1.4, 0.2, 2400, 200, "bandpass", delay, false, 1.5);
+        },
+        rumble() {
+          hiss(2.4, 0.3, 300, 60, "lowpass");
+          tone(48, 32, 2.0, "sawtooth", 0.1);
+        },
         win() {
           [523, 659, 784, 1047].forEach((f, i) =>
             tone(f, f, 0.16, "square", 0.08, 0.12 * i),
@@ -4407,6 +5851,43 @@
           winText: "The black knight falls",
           loseText: "Outmatched",
         },
+        {
+          moves: LICH_MOVES,
+          chainWindup: LICH_CHAIN,
+          deflect: LICH_DEFLECT,
+          weights: { orb: 0.45, spear: 0.3, curse: 0.25 },
+          first: "orb",
+          opening: ["orb", "curse"],
+          counter: "orb",
+          doubleKey: null,
+          volley: "orb",
+          rageCombo: LICH_COMBO,
+          feint: 0,
+          feintRage: 0,
+          feintInto: {},
+          glintLead: 0,
+          bg: bgLich,
+          pose: lichPose,
+          drawBoss: drawLichBody,
+          front: lichFront,
+          backdrop: lichBackdrop,
+          ambient: lichAmbient,
+          shadow: [34, "#0a120e"],
+          sparks: Z.s3,
+          shout: (d) => sfx.shriek(d),
+          death: (d) => sfx.wail(d),
+          snarl: () => sfx.cackle(),
+          onParry: lichParry,
+          onBlock: lichWard,
+          onInterrupt: lichShatter,
+          // the giant orb goes back into him and brings the crypt down
+          onCine: () => {
+            Object.assign(boss, { crumbled: true, crumbleT: 0 });
+            sfx.rumble();
+          },
+          winText: "The lich is unmade",
+          loseText: "Cursed",
+        },
       ];
       let levelIdx = 0,
         L = LEVELS[0];
@@ -4428,7 +5909,7 @@
       };
       let unlocked = Math.max(
         Number(store.get("dragonDuelUnlocked")) || 1,
-        { "#level2": 2, "#level3": 3 }[location.hash] || 1,
+        { "#level2": 2, "#level3": 3, "#level4": 4 }[location.hash] || 1,
       );
 
       const HIT_FX = {
@@ -4521,6 +6002,38 @@
           flashScreen("#ffffff", 0.55, 0.12);
           hitstop(0.08);
         },
+        orb: () => {
+          fx.push({ type: "hex", t: 0, dur: 0.55 });
+          shake(4, 0.25);
+          flashScreen(Z.s2, 0.35, 0.25);
+        },
+        spear: (d) => {
+          fx.push({
+            type: "cut",
+            t: 0,
+            dur: 0.8,
+            x0: 118 + d.side * 10,
+            y0: 234,
+            x1: 130 + d.side * 6,
+            y1: -10,
+            w: 10,
+          });
+          shake(8, 0.5);
+          flashScreen("#ffffff", 0.6, 0.15);
+          hitstop(0.12);
+        },
+        curse: () => {
+          fx.push({ type: "curse", t: 0, dur: 1.1 });
+          shake(6, 0.45);
+          flashScreen(Z.s3, 0.5, 0.2);
+        },
+        doom: () => {
+          fx.push({ type: "curse", t: 0, dur: 1.2 });
+          fx.push({ type: "hex", t: 0, dur: 0.7 });
+          shake(9, 0.6);
+          flashScreen("#ffffff", 0.7, 0.18);
+          hitstop(0.14);
+        },
       };
       const PARRY_AT = {
         claw: (s) => [108 + s * 6, 124],
@@ -4533,6 +6046,10 @@
         smite: () => [106, 120],
         lunge: () => [112, 130],
         bash: () => [112, 130],
+        orb: (s) => [112 + s * 14, 124],
+        spear: (s) => [112 + s * 10, 150],
+        curse: () => [112, 130],
+        doom: () => [112, 120],
       };
 
       let shakeT = 0,
@@ -4619,7 +6136,9 @@
 
       function chooseMove() {
         const d = boss;
-        if (d.last.length === 0) return L.first;
+        // a scripted start, so the lich shows his curse early
+        const op = L.opening || [L.first];
+        if (d.last.length < op.length) return op[d.last.length];
         const w = { ...L.weights };
         if (d.last.length >= 2 && d.last[0] === d.last[1]) w[d.last[0]] = 0;
         const keys = Object.keys(w);
@@ -4654,6 +6173,7 @@
           fromG: lastPose && lastPose.G ? lastPose.G : null,
         });
         d.side = o.side || (Math.random() < 0.5 ? -1 : 1);
+        d.n = o.n || 0; // place in a volley: the lich's orbs each sound their own note
         d.feint = o.chained
           ? !!o.feint
           : d.last.length > 1 &&
@@ -4665,10 +6185,26 @@
             d.queue = [key];
             d.chain = "double";
           }
+          if (key === L.volley) {
+            const n = d.raged
+              ? Math.random() < 0.5
+                ? 3
+                : 4
+              : Math.random() < 0.5
+                ? 2
+                : 3;
+            d.queue = Array.from({ length: n - 1 }, (_, i) => ({
+              key,
+              n: i + 1,
+              side: i % 2 ? d.side : -d.side,
+            }));
+            d.chain = "volley";
+          }
           d.last.unshift(key);
           d.last.length = Math.min(d.last.length, 2);
         }
-        sfx[key + "Windup"](w);
+        // a channel's windup sound is kept so breaking the spell can cut it off
+        d.channelSnd = sfx[key + "Windup"](w) || null;
       }
       // a chain step is a move key, or { key, side, feint } where a combo scripts them
       function nextInChain() {
@@ -4683,6 +6219,8 @@
         startMove(s.key, {
           chained: true,
           feint: s.feint,
+          n: s.n,
+          windup: s.windup,
           side:
             s.side ||
             (s.key === d.moveKey && s.key === L.doubleKey ? -d.side : 0),
@@ -4846,6 +6384,7 @@
             if (k > 0) sfx.parryHeavy(k);
             else sfx.parry();
           }
+          if (L.onParry) L.onParry(at);
           // knight's exchange: he reels open and you have to swing
           if (d.queue.length && d.queue[0].open) {
             d.queue.shift();
@@ -4900,14 +6439,8 @@
             size: [1, 2],
           });
           d.openHits = (d.openHits || 0) + 1;
-          if (d.hits >= CFG.bossHits) {
-            d.state = "dying";
-            d.t = 0;
-            game.mode = "winAnim";
-            game.modeT = 0;
-            hitstop(0.3);
-            L.death(0.7);
-          } else if (
+          if (d.hits >= CFG.bossHits) bossDies();
+          else if (
             L.counterAfter &&
             d.chain !== "rage" &&
             d.openHits >= L.counterAfter
@@ -4919,6 +6452,8 @@
           }
         } else if (d.state === "open" || d.state === "guard") {
           parriedByBoss(d.state === "open");
+        } else if (d.state === "windup" && d.move.channel) {
+          interrupt();
         } else {
           Object.assign(player, {
             lock: CFG.blockedLock,
@@ -4933,10 +6468,55 @@
             g: 200,
             cols: ["#ffffff", "#aab0c0"],
           });
+          if (L.onBlock) L.onBlock();
           if (d.state === "idle" && Math.random() < 0.6) {
             d.forced = L.counter;
             d.idleDur = Math.min(d.idleDur, d.t + 0.12);
           }
+        }
+      }
+      function bossDies() {
+        const d = boss;
+        d.state = "dying";
+        d.t = 0;
+        game.mode = "winAnim";
+        game.modeT = 0;
+        hitstop(0.3);
+        L.death(0.7);
+      }
+      // your sword breaks a channelled spell (the lich's curse): it counts as a hit and he reels.
+      // Mid-combo he shakes it off and carries on; otherwise he's open for more
+      function interrupt() {
+        const d = boss,
+          at = lastPose && lastPose.weakAt ? lastPose.weakAt : [128, 104];
+        d.hits++;
+        stats.hits++;
+        silence(d.channelSnd);
+        d.channelSnd = null;
+        d.flash = 0.08;
+        d.flinch = 1.6;
+        d.flinchDir = -d.flinchDir;
+        game.star = { t: 0, dur: 0.18, x: at[0], y: at[1], s: 26 };
+        fx.push({ type: "ring", t: 0, dur: 0.4, x: at[0], y: at[1], r1: 80 });
+        hitstop(0.14);
+        shake(6, 0.3);
+        flashScreen("#ffffff", 0.45, 0.1);
+        punch(0.05, at);
+        sfx.hit();
+        sfx.shatter();
+        if (L.onInterrupt) L.onInterrupt(at);
+        if (d.hits >= CFG.bossHits) bossDies();
+        else if (d.queue.length) {
+          d.state = "deflect";
+          d.t = 0;
+          d.deflectDur = L.deflect[d.moveKey];
+        } else {
+          Object.assign(d, {
+            state: "stunned",
+            t: 0,
+            openHits: 0,
+            stunDur: d.move.stun,
+          });
         }
       }
       // the knight parries your swing. In the exchange you then parry him; out of it he ripostes
@@ -5703,6 +7283,7 @@
           recoilT: -1,
           hurtT: -1,
         });
+        silence(boss.channelSnd);
         Object.assign(boss, {
           state: "idle",
           t: 0,
@@ -5729,6 +7310,10 @@
           openHits: 0,
           holdAt: null,
           weakT: 0,
+          n: 0,
+          channelSnd: null,
+          crumbled: false,
+          crumbleT: 0,
         });
         Object.assign(KN, { next: rand(5, 9), bolt: 0 });
         Object.assign(stats, { parries: 0, hits: 0, taken: 0 });
@@ -5859,15 +7444,18 @@
         btn.addEventListener("contextmenu", (e) => e.preventDefault());
       }
       const lvl2Btn = $("lvl2Btn"),
-        lvl3Btn = $("lvl3Btn");
+        lvl3Btn = $("lvl3Btn"),
+        lvl4Btn = $("lvl4Btn");
       function showLevelButtons() {
         lvl2Btn.hidden = unlocked < 2;
         lvl3Btn.hidden = unlocked < 3;
+        lvl4Btn.hidden = unlocked < 4;
       }
       showLevelButtons();
       $("startBtn").addEventListener("click", () => startFight(0));
       lvl2Btn.addEventListener("click", () => startFight(1));
       lvl3Btn.addEventListener("click", () => startFight(2));
+      lvl4Btn.addEventListener("click", () => startFight(3));
       $("againBtn").addEventListener("click", () => endAction());
       muteBtn.addEventListener("click", () => {
         audioOn();
@@ -5895,6 +7483,7 @@
       buildBackground();
       buildSamuraiBackground();
       buildKnightBackground();
+      buildLichBackground();
       let last = performance.now();
       // one tick of wall-clock time: realtime effects, then hitstop or the (possibly slowed) game update
       function step(rdt) {
