@@ -5784,7 +5784,6 @@
           snarl: () => sfx.snarl(),
           onCine: () => {},
           winText: "The dragon is slain",
-          loseText: "Clawed, burned and beaten",
         },
         {
           moves: SAMURAI_MOVES,
@@ -5813,7 +5812,6 @@
           onCine: () =>
             Object.assign(boss, { disarmed: true, disarmT: 0, landed: false }),
           winText: "The samurai yields",
-          loseText: "Cut down",
         },
         {
           moves: KNIGHT_MOVES,
@@ -5849,7 +5847,6 @@
                 lastPose && lastPose.head ? lastPose.head.slice() : [128, 60],
             }),
           winText: "The black knight falls",
-          loseText: "Outmatched",
         },
         {
           moves: LICH_MOVES,
@@ -5885,9 +5882,7 @@
             Object.assign(boss, { crumbled: true, crumbleT: 0 });
             sfx.rumble();
           },
-          winText: "The lich is unmade",
-          loseText: "Cursed",
-        },
+          winText: "The lich is put to rest"
       ];
       let levelIdx = 0,
         L = LEVELS[0];
