@@ -336,6 +336,252 @@
           min-height: 76px;
         }
       }
+
+      /* Mike's line in his intro, sized in canvas pixels (--px) so it scales with the stage */
+      .bubble {
+        --ink: #14070f;
+        position: absolute;
+        left: calc(var(--px, 2px) * 152);
+        top: calc(var(--px, 2px) * 12);
+        width: calc(var(--px, 2px) * 96);
+        padding: calc(var(--px, 2px) * 3) calc(var(--px, 2px) * 4)
+          calc(var(--px, 2px) * 4);
+        font-family: var(--font-body);
+        font-size: calc(var(--px, 2px) * 10);
+        line-height: 0.9;
+        color: var(--ink);
+        background: var(--bone);
+        box-shadow: 0 0 0 var(--px, 2px) var(--ink);
+        pointer-events: none;
+      }
+      .bubble::before,
+      .bubble::after {
+        content: "";
+        position: absolute;
+        bottom: calc(var(--px, 2px) * 2);
+        clip-path: polygon(100% 0, 0 100%, 100% 65%);
+      }
+      .bubble::before {
+        left: calc(var(--px, 2px) * -13);
+        width: calc(var(--px, 2px) * 13);
+        height: calc(var(--px, 2px) * 12);
+        background: var(--ink);
+      }
+      .bubble::after {
+        left: calc(var(--px, 2px) * -10);
+        width: calc(var(--px, 2px) * 11);
+        height: calc(var(--px, 2px) * 9);
+        bottom: calc(var(--px, 2px) * 3);
+        background: var(--bone);
+      }
+      .unsaid {
+        visibility: hidden;
+      }
+
+      /* Code screen: a tappable NES pad (the keyboard works too) */
+      #codePanel {
+        justify-items: center;
+        text-align: center;
+        gap: 16px;
+      }
+      .code-slots {
+        display: flex;
+        gap: 4px;
+      }
+      .code-slots span {
+        width: 24px;
+        height: 28px;
+        display: grid;
+        place-items: center;
+        font-family: var(--font-ui);
+        font-weight: 700;
+        font-size: 12px;
+        color: var(--bone);
+        background: var(--stone);
+        box-shadow: inset 0 0 0 2px var(--stone-hi);
+      }
+      .code-slots span.on {
+        box-shadow: inset 0 0 0 2px var(--bone-dim);
+      }
+      .code-slots.good span {
+        color: var(--night);
+        background: var(--ember);
+        box-shadow: inset 0 -3px 0 var(--ember-deep);
+      }
+      .code-slots.bad span.on {
+        color: var(--blood);
+        box-shadow: inset 0 0 0 2px var(--blood);
+      }
+      .code-slots.bad {
+        animation: nope 0.32s steps(4) both;
+      }
+      @keyframes nope {
+        25% {
+          transform: translateX(-6px);
+        }
+        50% {
+          transform: translateX(5px);
+        }
+        75% {
+          transform: translateX(-3px);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .code-slots.bad {
+          animation: none;
+        }
+      }
+      .nes {
+        --u: clamp(26px, min(8.4vw, 9vh), 42px);
+        --red: #cc2229;
+        --well: #a9a9b0;
+        display: grid;
+        grid-template-columns: auto auto auto;
+        align-items: center;
+        gap: calc(var(--u) * 0.45);
+        max-width: 100%;
+        padding: calc(var(--u) * 0.4) calc(var(--u) * 0.5);
+        background: #19191c;
+        border: calc(var(--u) * 0.24) solid #c4c4c9;
+        border-radius: calc(var(--u) * 0.18);
+        box-shadow:
+          0 0 0 2px #08070c,
+          0 calc(var(--u) * 0.16) 0 2px #5e5e66;
+      }
+      .nes button {
+        position: relative;
+        padding: 0;
+        border: 0;
+        cursor: pointer;
+        touch-action: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .dpad {
+        display: grid;
+        grid-template: repeat(3, var(--u)) / repeat(3, var(--u));
+      }
+      .dpad > * {
+        background: #0c0c0e;
+        box-shadow:
+          inset 0 -3px 0 #000,
+          inset 0 2px 0 #34343a;
+      }
+      .dpad [data-k="U"] {
+        grid-area: 1 / 2;
+        border-radius: 3px 3px 0 0;
+      }
+      .dpad [data-k="L"] {
+        grid-area: 2 / 1;
+        border-radius: 3px 0 0 3px;
+      }
+      .dpad .hub {
+        grid-area: 2 / 2;
+        box-shadow: inset 0 -3px 0 #000;
+      }
+      .dpad [data-k="R"] {
+        grid-area: 2 / 3;
+        border-radius: 0 3px 3px 0;
+      }
+      .dpad [data-k="D"] {
+        grid-area: 3 / 2;
+        border-radius: 0 0 3px 3px;
+      }
+      .dpad button::after {
+        content: "";
+        position: absolute;
+        inset: 30%;
+        background: #3c3c44;
+        clip-path: polygon(50% 10%, 95% 90%, 5% 90%);
+      }
+      .dpad [data-k="D"]::after {
+        transform: rotate(180deg);
+      }
+      .dpad [data-k="L"]::after {
+        transform: rotate(-90deg);
+      }
+      .dpad [data-k="R"]::after {
+        transform: rotate(90deg);
+      }
+      .dpad button.down {
+        background: #24242a;
+        box-shadow: inset 0 2px 0 #000;
+      }
+      .nes-mid {
+        width: calc(var(--u) * 2.4);
+        display: grid;
+        gap: calc(var(--u) * 0.12);
+      }
+      .nes-mid i {
+        height: calc(var(--u) * 0.2);
+        background: #55555c;
+        border-radius: 2px;
+      }
+      .nes-labels {
+        display: flex;
+        justify-content: space-around;
+        font-family: var(--font-ui);
+        font-size: calc(var(--u) * 0.24);
+        line-height: 1;
+        text-transform: uppercase;
+        color: var(--red);
+      }
+      .nes-ss {
+        display: flex;
+        justify-content: space-around;
+        padding: calc(var(--u) * 0.14);
+        background: var(--well);
+        border-radius: calc(var(--u) * 0.14);
+      }
+      .pill {
+        width: calc(var(--u) * 0.8);
+        height: calc(var(--u) * 0.3);
+        border-radius: 999px;
+        background: #18181c;
+        box-shadow: inset 0 -2px 0 #000;
+      }
+      /* a finger-sized target around the little button */
+      .pill::before {
+        content: "";
+        position: absolute;
+        inset: -12px -5px;
+      }
+      .pill.down {
+        transform: translateY(1px);
+        box-shadow: none;
+      }
+      .nes-ba {
+        display: flex;
+        gap: calc(var(--u) * 0.26);
+      }
+      .nes-ba > div {
+        display: grid;
+        justify-items: end;
+        gap: 3px;
+        font-family: var(--font-ui);
+        font-weight: 700;
+        font-size: calc(var(--u) * 0.34);
+        line-height: 1;
+        color: var(--red);
+      }
+      .well {
+        padding: calc(var(--u) * 0.14);
+        background: var(--well);
+        border-radius: calc(var(--u) * 0.14);
+      }
+      .round {
+        display: block;
+        width: calc(var(--u) * 1.1);
+        height: calc(var(--u) * 1.1);
+        border-radius: 50%;
+        background: #d42a30;
+        box-shadow:
+          inset 0 -4px 0 #84141a,
+          inset 0 3px 0 #ff7a7a;
+      }
+      .round.down {
+        transform: translateY(2px);
+        box-shadow: inset 0 3px 0 #84141a;
+      }
     </style>
   </head>
   <body>
@@ -347,6 +593,9 @@
           height="224"
           aria-label="I Parry Everything: first-person view of the duel"
         ></canvas>
+        <div class="bubble" id="bubble" hidden>
+          <span></span><span class="unsaid" aria-hidden="true"></span>
+        </div>
         <div class="lbar" id="barTop"></div>
         <div class="lbar" id="barBot"></div>
       </div>
@@ -367,7 +616,66 @@
             <button class="cta ghost" id="lvl4Btn" type="button" hidden>
               Level 4
             </button>
+            <button class="cta ghost" id="codeBtn" type="button">Code</button>
           </div>
+        </div>
+        <div class="panel" id="codePanel" hidden>
+          <p class="eyebrow">Enter a code</p>
+          <div class="code-slots" id="codeSlots" aria-label="Code entered"></div>
+          <div class="nes" role="group" aria-label="Controller">
+            <div class="dpad">
+              <button type="button" data-k="U" aria-label="Up"></button>
+              <button type="button" data-k="L" aria-label="Left"></button>
+              <span class="hub"></span>
+              <button type="button" data-k="R" aria-label="Right"></button>
+              <button type="button" data-k="D" aria-label="Down"></button>
+            </div>
+            <div class="nes-mid">
+              <i></i><i></i>
+              <div class="nes-labels"><span>Select</span><span>Start</span></div>
+              <div class="nes-ss">
+                <button
+                  class="pill"
+                  type="button"
+                  data-k="SELECT"
+                  aria-label="Select: clear"
+                ></button>
+                <button
+                  class="pill"
+                  type="button"
+                  data-k="START"
+                  aria-label="Start: enter"
+                ></button>
+              </div>
+            </div>
+            <div class="nes-ba">
+              <div>
+                <span class="well"
+                  ><button
+                    class="round"
+                    type="button"
+                    data-k="B"
+                    aria-label="B"
+                  ></button></span
+                >B
+              </div>
+              <div>
+                <span class="well"
+                  ><button
+                    class="round"
+                    type="button"
+                    data-k="A"
+                    aria-label="A"
+                  ></button></span
+                >A
+              </div>
+            </div>
+          </div>
+          <p class="fine keys">
+            <kbd>Arrows</kbd> <kbd>B</kbd> <kbd>A</kbd> to enter,
+            <kbd>Esc</kbd> to go back
+          </p>
+          <button class="cta ghost" id="codeBack" type="button">Back</button>
         </div>
         <div class="panel" id="endPanel" hidden>
           <p class="eyebrow" id="endEyebrow">The dragon is slain</p>
@@ -574,6 +882,95 @@
         { key: "curse" },
         { key: "doom" },
       ];
+      // secret level (Code on the title screen). Every punch but the jab and the ear bite takes 4 hearts, 5 once he's
+      // enraged. The super uppercut charges like the lich's curse: it can't be parried, only broken by hitting him, and it
+      // knocks you out. heft sets how hard a parry feels; side 1 throws the jab with his lead (left) hand
+      const TYSON_MOVES = {
+        jab: {
+          dmg: 1,
+          windup: 0.3,
+          window: 0.12,
+          stun: 0.45,
+          follow: 0.35,
+          side: 1,
+          heft: 0,
+        },
+        gut: {
+          dmg: 4,
+          rageDmg: 5,
+          windup: 0.7,
+          window: 0.2,
+          stun: 0.9,
+          follow: 0.55,
+          heft: 0.5,
+        },
+        haymaker: {
+          dmg: 4,
+          rageDmg: 5,
+          windup: [0.65, 0.85],
+          window: 0.2,
+          stun: 0.9,
+          follow: 0.6,
+          heft: 1,
+        },
+        uppercut: {
+          dmg: 4,
+          rageDmg: 5,
+          windup: 0.36,
+          window: 0.2,
+          stun: 1.5,
+          follow: 0.7,
+          heft: 1,
+        },
+        bite: {
+          dmg: 1,
+          windup: 0.34,
+          window: 0.18,
+          stun: 1.5,
+          follow: 0.6,
+          heft: 0.3,
+        },
+        super: {
+          dmg: 99,
+          windup: [1.6, 1.9],
+          window: 0.16,
+          stun: 1.4,
+          follow: 0.9,
+          unparryable: true,
+          channel: true,
+        },
+      };
+      const TYSON_CHAIN = {
+        jab: 0.24,
+        gut: 0.5,
+        haymaker: 0.48,
+        uppercut: 0.3,
+        bite: 0.3,
+        super: 2,
+      };
+      const TYSON_DEFLECT = {
+        jab: 0.14,
+        gut: 0.2,
+        haymaker: 0.22,
+        uppercut: 0.22,
+        bite: 0.2,
+        super: 0.3,
+      };
+      // any of these can follow one of his jabs
+      const TYSON_COMBOS = [
+        ["jab", "jab", "haymaker"],
+        ["jab", "jab", "uppercut"],
+        ["jab", "haymaker", "uppercut"],
+      ];
+      // his rage combo: all three combos in a random order, then a super uppercut that takes 3 hits to break
+      function tysonRageCombo() {
+        const c = TYSON_COMBOS.slice();
+        for (let i = c.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [c[i], c[j]] = [c[j], c[i]];
+        }
+        return [...c.flat(), { key: "super", windup: 2, needs: 3 }];
+      }
 
       /* ================= Setup ================= */
       const W = 256,
@@ -4794,6 +5191,952 @@
         return p;
       }
 
+      /* ================= Mike Tyson (secret level) ================= */
+      const TY = {
+        s0: "#26130b",
+        s1: "#47271a",
+        s2: "#6b3d24",
+        s3: "#8d5732",
+        s4: "#b07446", // skin
+        hair: "#100b09",
+        t0: "#060608",
+        t1: "#141418",
+        t2: "#28282f", // trunks
+        band: "#e6e2d8",
+        lace: "#e9e3d5",
+        shoe: "#0b0b0e",
+        eye: "#eee6d4",
+        pupil: "#140a08",
+        mouth: "#2a0a0c",
+        teeth: "#f2ecdc",
+        sweat: "#a8d4ff",
+      };
+      // glove palettes, outline to shine: his red ones, your green ones, and yours lit white by a parry
+      const TY_GLOVE = ["#3e080c", "#6e1016", "#a81a22", "#dc3a40", "#ff9a94"],
+        MY_GLOVE = ["#0b2410", "#1b5a2a", "#2c8a40", "#52b85e", "#a6ec9c"],
+        HOT_GLOVE = ["#ffffff", "#dfe8ff", "#ffffff", "#ffffff", "#ffffff"];
+      const bgTyson = document.createElement("canvas");
+      bgTyson.width = W;
+      bgTyson.height = H;
+      const TYS = { flashes: [] }; // camera flashes in the crowd
+      // his intro: he talks, swats your sword and shield away, your gloves come up, the bell rings
+      const TY_T = {
+        talk: 0.7,
+        cps: 22,
+        talkEnd: 3.3,
+        swat: 3.6,
+        gloves: 4.0,
+        bell: 4.55,
+        end: 5.1,
+      };
+      const TY_LINE = "Let's thsee who's fisths are fasther, mine or yourths";
+      const bubble = document.getElementById("bubble"),
+        bubbleSaid = bubble.firstElementChild,
+        bubbleRest = bubble.lastElementChild;
+
+      function buildTysonBackground() {
+        const tctx = bgTyson.getContext("2d");
+        g = tctx;
+        const img = tctx.createImageData(W, H),
+          d32 = new Uint32Array(img.data.buffer);
+        const dark = ["#07060d", "#0b0914", "#100d1c", "#151125"].map(pack),
+          mat = ["#1f2750", "#252e62", "#2c3774", "#344186"].map(pack);
+        for (let y = 0; y < H; y++)
+          for (let x = 0; x < W; x++) {
+            const th = (BAYER[(y & 3) * 4 + (x & 3)] + 0.5) / 16,
+              top = y < 150,
+              cols = top ? dark : mat;
+            // the mat is brightest in the middle, under the lights
+            const v =
+                (top
+                  ? y / 150
+                  : clamp(
+                      1 - Math.abs(x - 128) / 200 - (y - 150) / 260,
+                      0,
+                      1,
+                    )) *
+                (cols.length - 1),
+              i = Math.floor(v);
+            d32[y * W + x] =
+              cols[Math.min(cols.length - 1, v - i > th ? i + 1 : i)];
+          }
+        tctx.putImageData(img, 0, 0);
+        // the crowd: rows of heads and shoulders, nearer rows a touch lighter
+        const rnd = mulberry32(7);
+        ["#100d1c", "#141124", "#19152c", "#1e1934", "#241e3e"].forEach(
+          (c, r) => {
+            const y = 60 + r * 13;
+            for (let x = -6 + rnd() * 6; x < W + 6; x += 9 + rnd() * 4) {
+              const hy = y + rnd() * 3;
+              ell(x, hy + 8, 6, 4, c);
+              circ(x, hy, 3.5, c);
+            }
+          },
+        );
+        // a lighting truss overhead, and its beams on the ring
+        rect(0, 8, W, 3, "#1c1a2c");
+        rect(0, 11, W, 1, "#0c0b14");
+        for (let x = 16; x < W; x += 32) {
+          rect(x - 4, 11, 8, 4, "#2a2840");
+          rect(x - 3, 14, 6, 2, "#fff2c8");
+        }
+        tctx.globalAlpha = 0.05;
+        for (const x of [80, 176])
+          poly([x - 5, 16, x + 5, 16, x + 70, 210, x - 70, 210], "#fff2c8");
+        tctx.globalAlpha = 1;
+        // the far apron and the corner posts
+        rect(0, 140, W, 10, "#141836");
+        rect(0, 140, W, 1, "#2e3870");
+        for (const [x, pad] of [
+          [16, "#9a1c26"],
+          [240, "#1c3a9a"],
+        ]) {
+          rect(x - 3, 70, 7, 82, "#5a5e6e");
+          rect(x - 3, 70, 2, 82, "#9a9eae");
+          rect(x - 6, 84, 13, 48, pad);
+          rect(x - 6, 84, 3, 48, mix(pad, "#ffffff", 0.3));
+        }
+        // three ropes between the posts, and the side ropes running toward you
+        for (const [y, c] of [
+          [92, "#c22c3c"],
+          [108, "#e6e2d6"],
+          [124, "#2e4cb8"],
+        ]) {
+          rect(0, y, W, 2, c);
+          rect(0, y + 2, W, 1, "#07060d");
+          limb(16, y + 1, 1, -64, y + 120, 2.5, c);
+          limb(240, y + 1, 1, 320, y + 120, 2.5, c);
+        }
+        // the logo ring on the canvas, and its seams
+        for (let i = 0; i < 200; i++) {
+          const a = (i / 200) * TAU;
+          rect(128 + Math.cos(a) * 98, 194 + Math.sin(a) * 20, 2, 1, "#3f4c94");
+        }
+        for (const y of [166, 186, 212]) rect(0, y, W, 1, "#1c2348");
+        g = ctx;
+      }
+      function tysonBackdrop() {
+        for (const f of TYS.flashes) {
+          const u = f.t / 0.12;
+          ctx.globalAlpha = 0.25 * (1 - u);
+          circ(f.x, f.y, 6, "#ffffff");
+          ctx.globalAlpha = 1 - u;
+          star(f.x, f.y, 2, "#ffffff", "#ffffff");
+        }
+        ctx.globalAlpha = 1;
+      }
+      // the talking, the swat and the bell in his intro
+      function tysonIntro() {
+        const d = boss,
+          u = game.modeT;
+        const n = clamp(
+          Math.floor((u - TY_T.talk) * TY_T.cps),
+          0,
+          TY_LINE.length,
+        );
+        bubble.hidden = u < TY_T.talk - 0.15 || u >= TY_T.talkEnd;
+        if (n !== d.said) {
+          if (n > d.said && n % 2) sfx.talk();
+          d.said = n;
+          // the unsaid part keeps its space, so the bubble doesn't grow as he talks
+          bubbleSaid.textContent = TY_LINE.slice(0, n);
+          bubbleRest.textContent = TY_LINE.slice(n);
+        }
+        if (!d.swatted && u >= TY_T.swat) {
+          d.swatted = true;
+          sfx.clank();
+          shake(4, 0.25);
+          burst(214, 190, 14, {
+            speed: [40, 140],
+            life: [0.15, 0.35],
+            g: 200,
+            cols: ["#ffffff", "#c6d2ea", "#5d6a86"],
+            streak: true,
+          });
+        }
+        if (!d.swatted2 && u >= TY_T.swat + 0.12) {
+          d.swatted2 = true;
+          sfx.thud();
+          shake(4, 0.25);
+          burst(50, 188, 12, {
+            speed: [30, 110],
+            life: [0.2, 0.45],
+            g: 260,
+            cols: ["#7d4a2a", "#4e2c19", "#9c2a2a"],
+            size: [1, 2],
+          });
+        }
+        if (!d.belled && u >= TY_T.bell) {
+          d.belled = true;
+          sfx.bell();
+        }
+      }
+      function tysonAmbient(dt) {
+        const d = boss,
+          p = lastPose;
+        // camera flashes in the crowd, a storm of them when he goes down
+        const rate = d.state === "dying" ? 30 : d.raged ? 6 : 3;
+        if (Math.random() < rate * dt)
+          TYS.flashes.push({ x: rand(4, 252), y: rand(56, 126), t: 0 });
+        for (const f of TYS.flashes) f.t += dt;
+        TYS.flashes = TYS.flashes.filter((f) => f.t < 0.12);
+        if (game.mode === "intro") tysonIntro();
+        if (!p || !p.head) return;
+        const [hx, hy] = p.head;
+        // sweat flies when he's rattled, and once he's enraged
+        const sweat = d.state === "stunned" ? 8 : d.raged ? 2 : 0;
+        if (Math.random() < sweat * dt)
+          parts.push({
+            x: hx + rand(-12, 12),
+            y: hy - 8,
+            vx: rand(-30, 30),
+            vy: rand(-50, -20),
+            g: 200,
+            drag: 0,
+            life: rand(0.3, 0.6),
+            t: 0,
+            size: 1,
+            cols: [TY.sweat, "#6a9ad0"],
+            layer: 1,
+          });
+        // the super uppercut drinks light into his glove
+        if (p.charge && Math.random() < 40 * p.charge[2] * dt) {
+          const [x, y] = p.charge,
+            a = rand(0, TAU),
+            r = rand(20, 36),
+            life = rand(0.2, 0.35);
+          parts.push({
+            x: x + Math.cos(a) * r,
+            y: y + Math.sin(a) * r,
+            vx: (-Math.cos(a) * r) / life,
+            vy: (-Math.sin(a) * r) / life,
+            g: 0,
+            drag: 0,
+            life,
+            t: 0,
+            size: 1,
+            cols: [C.f0, C.f1, C.f2],
+            layer: 1,
+          });
+        }
+        // he's open while he charges (hit him!) and while he's dazed
+        tickWeakSpot(
+          dt,
+          (d.state === "windup" && d.move && d.move.channel) ||
+            (d.state === "stunned" && d.t >= 0.2),
+        );
+        // the finale: your uppercut lands on his chin
+        if (game.cine && d.cineUpper && !d.chinHit && game.cine.t >= 0.55) {
+          d.chinHit = true;
+          game.impactT = 0.08;
+          game.star = { t: 0, dur: 0.3, x: hx + 2, y: hy + 16, s: 34 };
+          d.flash = 0.03;
+          flashScreen("#ffffff", 0.5, 0.05);
+          shake(7, 0.5);
+          sfx.chinHit();
+          burst(hx, hy + 8, 30, {
+            speed: [40, 160],
+            life: [0.3, 0.7],
+            g: 200,
+            cols: ["#ffffff", TY.sweat, "#5a8ac0"],
+            size: [1, 2],
+          });
+        }
+      }
+      // breaking his super uppercut: the charge bursts off the glove
+      function tysonBreak() {
+        const q = lastPose && lastPose.charge;
+        if (q)
+          burst(q[0], q[1], 30, {
+            speed: [40, 180],
+            life: [0.2, 0.5],
+            g: 160,
+            cols: ["#ffffff", C.f0, C.f1, C.f2],
+            size: [1, 2],
+          });
+      }
+
+      // a boxing glove knuckles-on: mitt, thumb on the inside (s is which hand), a shine up top
+      function drawGlove(x, y, r, s, pal) {
+        const [, dk, b, l, sh] = pal;
+        circ(x, y, r, dk);
+        ell(x - s * r * 0.74, y + r * 0.3, r * 0.34, r * 0.46, dk);
+        circ(x + s * r * 0.06, y - r * 0.06, r * 0.84, b);
+        ell(x - s * r * 0.72, y + r * 0.26, r * 0.22, r * 0.34, b);
+        ell(x - r * 0.22, y - r * 0.36, r * 0.42, r * 0.26, l);
+        if (r >= 9)
+          rect(x - r * 0.45, y + r * 0.42, r * 0.9, Math.max(1, r * 0.08), dk);
+        rect(
+          x - r * 0.4,
+          y - r * 0.52,
+          Math.max(1, r * 0.14),
+          Math.max(1, r * 0.1),
+          sh,
+        );
+      }
+      function tyArm(sx, sy, hx, hy, s) {
+        const len = Math.hypot(hx - sx, hy - sy),
+          bend = Math.max(0, 50 - len) * 0.55 + 4,
+          ex = (sx + hx) / 2 + s * bend * 0.7,
+          ey = (sy + hy) / 2 + bend;
+        limb(sx, sy, 9, ex, ey, 8, TY.s1);
+        limb(ex, ey, 8, hx, hy, 7, TY.s1);
+        limb(sx, sy, 8, ex, ey, 7, TY.s2);
+        limb(ex, ey, 7, hx, hy, 6, TY.s2);
+        limb(sx - s * 2, sy - 1, 3, ex - s * 2, ey - 1, 2, TY.s3);
+      }
+      // a glove thrown at you: the forearm foreshortens behind it, the laced cuff peeks out around it
+      function drawTysonPunch(q) {
+        const dx = q.sx - q.x,
+          dy = q.sy - q.y,
+          len = Math.hypot(dx, dy) || 1;
+        limb(q.sx, q.sy, 9, q.x, q.y, q.r * 0.5, TY.s1);
+        limb(q.sx, q.sy, 8, q.x, q.y, q.r * 0.44, TY.s2);
+        limb(
+          q.sx - q.s * 2,
+          q.sy - 2,
+          3,
+          q.x,
+          q.y - q.r * 0.2,
+          q.r * 0.14,
+          TY.s3,
+        );
+        const ux = dx / len,
+          uy = dy / len;
+        limb(
+          q.x + ux * q.r * 0.4,
+          q.y + uy * q.r * 0.4,
+          q.r * 0.48,
+          q.x + ux * q.r * 0.8,
+          q.y + uy * q.r * 0.8,
+          q.r * 0.4,
+          TY.lace,
+        );
+        drawGlove(q.x, q.y, q.r, q.s, TY_GLOVE);
+      }
+      // drawn at scale s, so the same head works up close when he lunges in for a bite
+      function drawTysonHead(hx, hy, s, p) {
+        const T = game.time,
+          X = (v) => hx + v * s,
+          Y = (v) => hy + v * s,
+          S = (v) => Math.max(1, v * s),
+          P = (pts) => pts.map((v, i) => (i % 2 ? Y(v) : X(v)));
+        for (const e of [-1, 1]) {
+          ell(X(e * 15), Y(1), S(3), S(5), TY.s2);
+          ell(X(e * 15.5), Y(1), S(1.4), S(3), TY.s1);
+        }
+        // a broad skull and a heavy jaw, lit from your left
+        poly(
+          P([
+            -13, -14, 13, -14, 15, -4, 15, 6, 11, 14, 5, 17, -5, 17, -11, 14,
+            -15, 6, -15, -4,
+          ]),
+          TY.s2,
+        );
+        poly(
+          P([7, -12, 13, -14, 15, -4, 15, 6, 11, 14, 5, 17, 2, 17, 8, 8, 10, -2]),
+          TY.s1,
+        );
+        ell(X(-7), Y(-8), S(5), S(3), TY.s3);
+        ell(X(-9), Y(5), S(3), S(4), TY.s3);
+        ell(X(-2), Y(15), S(4), S(1.5), TY.s3);
+        // flat-top crop
+        poly(
+          P([
+            -14, -17, 14, -17, 15, -6, 12, -9, 6, -11, -6, -11, -12, -9, -15,
+            -6,
+          ]),
+          TY.hair,
+        );
+        rect(X(-12), Y(-17), S(10), S(1), "#2a201c");
+        // brows: knitted down when he's mad
+        const mad = p.eyes === "mad";
+        poly(
+          P(mad ? [-11, -6, -3, -3, -3, -1, -11, -4] : [-11, -5, -3, -5, -3, -3, -11, -3]),
+          TY.s0,
+        );
+        poly(
+          P(mad ? [3, -3, 11, -6, 11, -4, 3, -1] : [3, -5, 11, -5, 11, -3, 3, -3]),
+          TY.s0,
+        );
+        for (const ex of [-10, 4]) {
+          if (p.eyes === "ko") {
+            line(X(ex + 1), Y(-2), X(ex + 5), Y(1), TY.s0);
+            line(X(ex + 1), Y(1), X(ex + 5), Y(-2), TY.s0);
+            continue;
+          }
+          const dazed = p.eyes === "dazed",
+            px = dazed ? R(Math.sin(T * 6 + ex) * 1.5) : ex < 0 ? 3 : 1;
+          rect(X(ex), Y(mad ? -0.5 : -1), S(6), S(mad ? 1.5 : 2), TY.eye);
+          rect(X(ex + px), Y(-1), S(2), S(2), TY.pupil);
+          if (dazed) rect(X(ex), Y(-2), S(6), S(1.5), TY.s1);
+        }
+        // a broad nose
+        poly(P([-2, 0, 2, 0, 4, 6, -4, 6]), TY.s1);
+        rect(X(-1), Y(1), S(1), S(3), TY.s3);
+        rect(X(-4), Y(6), S(3), S(1), TY.s0);
+        rect(X(1), Y(6), S(3), S(1), TY.s0);
+        const o = p.open;
+        if (p.mouth === "open") {
+          ell(X(0), Y(11), S(4 + 2 * o), S(1 + 4 * o), TY.s0);
+          ell(X(0), Y(11), S(3 + 2 * o), S(0.6 + 3.4 * o), TY.mouth);
+          rect(X(-3 - o), Y(11 - 3.4 * o), S(6 + 2 * o), S(1 + 0.6 * o), TY.teeth);
+          if (o > 0.6)
+            rect(X(-2 - o), Y(10 + 3 * o), S(4 + 2 * o), S(1 + 0.4 * o), TY.teeth);
+        } else if (p.mouth === "grit") {
+          rect(X(-5), Y(9), S(10), S(3), TY.s0);
+          rect(X(-4), Y(9.5), S(8), S(2), TY.teeth);
+        } else if (p.mouth === "smirk")
+          poly(P([-5, 11, 5, 9, 5, 10, -5, 12]), TY.s0);
+        else {
+          rect(X(-5), Y(10), S(10), S(1), TY.s0);
+          rect(X(-4), Y(11), S(8), S(1), TY.s1);
+        }
+      }
+      function drawTysonBody(p) {
+        const cx = 128 + p.bx,
+          by = p.by,
+          T = game.time,
+          [hx, hy] = p.head;
+        // legs bent in his stance, black boots, no socks
+        for (const s of [-1, 1]) {
+          const hipX = cx + s * 16,
+            hipY = 168 + by,
+            fx = 128 + p.bx * 0.4 + s * 32,
+            fy = 197;
+          const kx = lerp(hipX, fx, 0.5) + s * 5,
+            ky = lerp(hipY, fy, 0.5);
+          limb(hipX, hipY, 10, kx, ky, 8, TY.s1);
+          limb(kx, ky, 8, fx, fy - 6, 6, TY.s1);
+          limb(hipX - s * 2, hipY, 8, kx - s, ky, 6, TY.s2);
+          limb(kx - s, ky, 6, fx - s, fy - 6, 4, TY.s2);
+          if (s < 0) limb(hipX - 5, hipY, 3, kx - 4, ky, 2, TY.s3);
+          poly(
+            [fx - 8, fy - 8, fx + 8, fy - 8, fx + 10, fy + 2, fx - 10, fy + 2],
+            TY.shoe,
+          );
+          rect(fx - 7, fy - 8, 14, 1, "#2c2c34");
+        }
+        // black trunks, white waistband
+        poly(
+          [
+            cx - 31,
+            146 + by,
+            cx + 31,
+            146 + by,
+            cx + 35,
+            174 + by,
+            cx + 3,
+            176 + by,
+            cx,
+            170 + by,
+            cx - 3,
+            176 + by,
+            cx - 35,
+            174 + by,
+          ],
+          TY.t1,
+        );
+        poly(
+          [
+            cx + 8,
+            148 + by,
+            cx + 31,
+            148 + by,
+            cx + 35,
+            174 + by,
+            cx + 8,
+            175 + by,
+          ],
+          TY.t0,
+        );
+        rect(cx - 24, 153 + by, 10, 1, TY.t2);
+        rect(cx - 31, 143 + by, 62, 5, TY.band);
+        rect(cx - 31, 147 + by, 62, 1, "#9a968c");
+        // torso: a V of muscle, the shadow side to your right
+        poly(
+          [
+            cx - 42,
+            84 + by,
+            cx + 42,
+            84 + by,
+            cx + 38,
+            108 + by,
+            cx + 29,
+            144 + by,
+            cx - 29,
+            144 + by,
+            cx - 38,
+            108 + by,
+          ],
+          TY.s2,
+        );
+        poly(
+          [
+            cx + 12,
+            86 + by,
+            cx + 42,
+            84 + by,
+            cx + 38,
+            108 + by,
+            cx + 29,
+            144 + by,
+            cx + 14,
+            144 + by,
+          ],
+          TY.s1,
+        );
+        ell(cx - 15, 99 + by, 15, 9, TY.s3);
+        ell(cx + 15, 99 + by, 14, 8, TY.s2);
+        ell(cx - 17, 96 + by, 8, 4, TY.s4);
+        rect(cx - 28, 108 + by, 56, 1, TY.s1);
+        for (let i = 0; i < 3; i++)
+          for (const s of [-1, 1])
+            ell(cx + s * 7, 117 + i * 9 + by, 5, 3, s < 0 ? TY.s3 : TY.s2);
+        rect(cx, 110 + by, 1, 34, TY.s1);
+        // traps, neck, shoulders
+        poly(
+          [cx - 13, 68 + by, cx + 13, 68 + by, cx + 34, 86 + by, cx - 34, 86 + by],
+          TY.s2,
+        );
+        // the head, unless it's lunging in for a bite (then it's drawn last, in front of everything)
+        const close = p.hs > 1.3;
+        limb(cx, 84 + by, 12, hx, hy + 10 * p.hs, 11 * Math.min(p.hs, 2), TY.s2);
+        if (!close) rect(hx + 3, hy + 14, 8, 10, TY.s1);
+        for (const s of [-1, 1]) {
+          circ(cx + s * 40, 90 + by, 11, s < 0 ? TY.s2 : TY.s1);
+          if (s < 0) circ(cx - 42, 86 + by, 6, TY.s3);
+        }
+        if (!close) drawTysonHead(hx, hy, p.hs, p);
+        for (const [s, gv] of [
+          [-1, p.gr],
+          [1, p.gl],
+        ]) {
+          if (!gv) continue;
+          const [sx, sy] = p.shoulders[s > 0 ? 1 : 0];
+          tyArm(sx, sy, gv[0], gv[1], s);
+          drawGlove(gv[0], gv[1], gv[2], s, TY_GLOVE);
+        }
+        for (const q of p.punches) drawTysonPunch(q);
+        if (close) drawTysonHead(hx, hy, p.hs, p);
+        if (p.stars > 0)
+          for (let i = 0; i < 3; i++) {
+            if (p.stars < i / 3 + 0.1) continue;
+            const an = T * 4 + (i * TAU) / 3;
+            star(
+              hx + Math.cos(an) * 22,
+              hy - 24 + Math.sin(an) * 5,
+              2,
+              C.f1,
+              C.f0,
+            );
+          }
+      }
+      function tysonFront(p) {
+        const T = game.time;
+        if (p.charge) {
+          // the super uppercut charging; every hit you land dims it
+          const [x, y, k] = p.charge;
+          ctx.globalAlpha = 0.2 * k;
+          circ(x, y, 20 + 5 * Math.sin(T * 22), C.f1);
+          ctx.globalAlpha = 0.4 * k;
+          circ(x, y, 13 + 2 * Math.sin(T * 30), C.f0);
+          ctx.globalAlpha = 1;
+          for (let i = 0; i < 4; i++) {
+            const a = T * 5 + (i * TAU) / 4;
+            star(
+              x + Math.cos(a) * 20 * k,
+              y + Math.sin(a) * 8 * k,
+              k > 0.5 ? 2 : 1,
+              "#ffffff",
+              C.f1,
+            );
+          }
+        }
+        if (p.weak > 0) drawWeakGlow(p);
+        // the twinkle in his eye: a real punch is coming. A feint doesn't get one
+        if (p.glint)
+          star(
+            p.eyeAt[0],
+            p.eyeAt[1],
+            3 + (Math.floor(T * 30) % 2),
+            "#ffffff",
+            "#ffffff",
+          );
+        if (boss.state !== "strike") return;
+        ctx.globalAlpha = 0.4;
+        for (const q of p.punches)
+          for (let i = 0; i < 12; i++) {
+            const an = (i / 12) * TAU,
+              r0 = q.r * 1.05 + 5;
+            line(
+              q.x + Math.cos(an) * r0,
+              q.y + Math.sin(an) * r0,
+              q.x + Math.cos(an) * (r0 + 16),
+              q.y + Math.sin(an) * (r0 + 16),
+              "#ffffff",
+            );
+          }
+        ctx.globalAlpha = 1;
+      }
+
+      function tysonPose() {
+        const d = boss,
+          T = game.time,
+          st = d.state,
+          mk = d.moveKey,
+          mode = game.mode,
+          m = d.side;
+        // light on his feet: he bounces, bobs and weaves
+        const hop = Math.abs(Math.sin(T * 4.4));
+        const p = {
+          bx: Math.sin(T * 2.2) * 3,
+          by: -2 * hop,
+          sink: 0,
+          hxo: Math.sin(T * 2.2 + 0.7) * 2,
+          hyo: 0,
+          hs: 1,
+          eyes: d.raged ? "mad" : "open",
+          mouth: "shut",
+          open: 0,
+          stars: 0,
+          glint: false,
+          punches: [],
+          charge: null,
+          bite: null,
+          weak: 0,
+          weakT: d.weakT || 0,
+          urgent: 0,
+        };
+        // gloves [x from centre, y, radius]: gl is his left hand (your right), gr his right (your left)
+        const GL = [22, 94, 12],
+          GR = [-22, 98, 12],
+          HIGH = [
+            [10, 64, 13],
+            [-10, 66, 13],
+          ],
+          LOW = [
+            [30, 136, 11],
+            [-30, 138, 11],
+          ],
+          WIDE = [
+            [46, 104, 12],
+            [-46, 104, 12],
+          ];
+        const to = (a, b, k) => a.map((v, i) => lerp(v, b[i], k));
+        let gl = GL,
+          gr = GR,
+          chargeK = 0;
+        const get = (s) => (s > 0 ? gl : gr),
+          set = (s, v) => (s > 0 ? (gl = v) : (gr = v)),
+          guardTo = (pair, k) => {
+            if (gl) gl = to(gl, pair[0], k);
+            if (gr) gr = to(gr, pair[1], k);
+          };
+        // where each punch winds up (mirrored to the hand throwing it), and where it lands on your screen
+        const WIND = {
+          jab: [30, 84, 11],
+          gut: [34, 138, 12],
+          haymaker: [72, 64, 13],
+          uppercut: [24, 152, 12],
+          super: [32, 176, 13],
+        };
+        const wind = (k) => [m * WIND[k][0], WIND[k][1], WIND[k][2]],
+          hitAt = (k) =>
+            ({
+              jab: [128 + m * 6, 114, 56],
+              gut: [128, 170, 54],
+              haymaker: [128 - m * 18, 112, 64],
+              uppercut: [128 + m * 4, 104, 60],
+              super: [128, 100, 92],
+            })[k];
+        // a glove coming at you, from a spot in his stance to a spot on your screen; that hand leaves his stance
+        const throwAt = (s, from, at, k) => {
+          p.punches.push({ s, from, at, k });
+          set(s, null);
+        };
+        const daze = (b) => {
+          guardTo(LOW, b);
+          p.by += (4 + 2 * hop) * b;
+          p.hyo += 5 * b;
+          p.hxo += Math.sin(T * 5) * 4 * b;
+          p.stars = b;
+          if (b > 0.3) {
+            p.eyes = "dazed";
+            p.mouth = "open";
+            p.open = 0.4 * b;
+          }
+        };
+        const shout = (r) => {
+          p.hyo -= 3 * r;
+          p.hxo += Math.sin(T * 40) * 0.6 * r;
+          if (r > 0.2) {
+            p.mouth = "open";
+            p.open = r;
+          }
+          if (r > 0.3) p.eyes = "mad";
+        };
+
+        if (mode === "intro") {
+          const u = game.modeT;
+          p.by += 14 * (1 - easeOut(clamp(u / 0.6, 0, 1)));
+          // bumps his gloves together, drops them to talk, then swats your sword and shield away
+          guardTo(
+            [
+              [7, 90, 12],
+              [-7, 90, 12],
+            ],
+            Math.sin(clamp((u - 0.2) / 0.35, 0, 1) * Math.PI),
+          );
+          const talk =
+            smooth(TY_T.talk - 0.15, TY_T.talk + 0.1, u) *
+            (1 - smooth(TY_T.talkEnd - 0.1, TY_T.talkEnd + 0.15, u));
+          guardTo(
+            [
+              [28, 108, 12],
+              [-28, 110, 12],
+            ],
+            talk,
+          );
+          p.hxo += 3 * talk;
+          if (talk > 0.5) {
+            const talking = (u - TY_T.talk) * TY_T.cps < TY_LINE.length;
+            p.mouth = talking ? "open" : "smirk";
+            p.open = talking ? (Math.floor(T * 12) % 2 ? 0.55 : 0.1) : 0;
+          }
+          for (const [s, t0, at] of [
+            [1, TY_T.swat, [214, 194, 40]],
+            [-1, TY_T.swat + 0.12, [48, 192, 40]],
+          ]) {
+            const a = clamp((u - t0 + 0.12) / 0.12, 0, 1),
+              r = clamp((u - t0) / 0.25, 0, 1);
+            if (a > 0 && r < 1)
+              throwAt(s, s > 0 ? GL : GR, at, a < 1 ? a * a : 1 - easeOut(r));
+          }
+          if (u > TY_T.talkEnd && u < TY_T.swat + 0.4) p.mouth = "grit";
+        } else if (mode === "loseAnim" || mode === "lose") {
+          // you're down: both gloves up to the crowd
+          const r = smooth(0.3, 0.8, game.modeT);
+          guardTo(
+            [
+              [34, 40, 13],
+              [-34, 42, 13],
+            ],
+            r,
+          );
+          p.mouth = "open";
+          p.open = 0.6 * r;
+          p.by -= 2 * hop * r;
+        } else if (st === "rageRoar") {
+          const r = smooth(0, 0.2, d.t / 1.3) * (1 - smooth(0.8, 1, d.t / 1.3));
+          shout(r);
+          // pounding his gloves together
+          guardTo(
+            [
+              [6, 86, 13],
+              [-6, 86, 13],
+            ],
+            Math.abs(Math.sin(d.t * 9)) * r,
+          );
+        } else if (st === "snarl") {
+          // two taps of the gloves: here it comes
+          guardTo(
+            [
+              [7, 90, 12],
+              [-7, 90, 12],
+            ],
+            Math.abs(Math.sin((d.t / 0.5) * Math.PI * 2)),
+          );
+          p.eyes = "mad";
+          p.mouth = "smirk";
+        } else if (st === "windup" || st === "feint") {
+          const t = st === "windup" ? clamp(d.t / d.windup, 0, 1) : 1,
+            e = easeOut(clamp(t / 0.6, 0, 1));
+          if (mk === "bite") {
+            // leans in to grab you
+            guardTo(WIDE, e);
+            p.by += 3 * e;
+            p.hyo += 5 * e;
+            p.mouth = "open";
+            p.open = 0.35 * e;
+            p.eyes = "mad";
+          } else {
+            set(m, to(get(m), wind(mk), e));
+            if (mk === "jab") p.bx -= m * 2 * e;
+            if (mk === "gut") {
+              p.by += 6 * e;
+              p.bx -= m * 3 * e;
+            }
+            if (mk === "haymaker") {
+              p.bx -= m * 6 * e;
+              p.hxo -= m * 3 * e;
+              set(-m, to(get(-m), [-m * 12, 70, 13], e));
+            }
+            if (mk === "uppercut") {
+              p.by += 5 * e;
+              p.hxo += m * 2 * e;
+            }
+            if (mk === "super") {
+              // a deep crouch, the other glove covering up, the fist trembling as it charges
+              p.by += 14 * e;
+              set(-m, to(get(-m), [-m * 10, 72, 13], e));
+              p.bx += Math.sin(T * 50) * 1.6 * smooth(0.4, 1, t);
+              p.mouth = "grit";
+              chargeK = e * (1 - 0.6 * (d.breaks / d.needs));
+              p.weak = clamp(p.weakT / 0.08, 0, 1);
+              p.urgent = t;
+            }
+            if (t > 0.5) p.eyes = "mad";
+          }
+          p.glint =
+            st === "windup" &&
+            !d.feint &&
+            !d.move.unparryable &&
+            d.t >= d.windup - L.glintLead;
+          if (st === "feint") {
+            // the fake: the glove twitches at you, no twinkle, and comes back
+            const j =
+              Math.sin(clamp(d.t / CFG.feintHitch, 0, 1) * Math.PI) * 0.6;
+            set(m, to(get(m), [m * 8, 104, 17], j * 0.6));
+            p.bx += m * 3 * j;
+          }
+        } else if (st === "strike") {
+          const t = clamp(d.t / d.move.window, 0, 1);
+          p.eyes = "mad";
+          p.mouth = "grit";
+          if (mk === "bite") {
+            guardTo(WIDE, 1);
+            p.by += 6;
+            p.bite = t;
+            p.mouth = "open";
+            p.open = t < 0.75 ? 1 : 0.2;
+          } else {
+            throwAt(m, wind(mk), hitAt(mk), t ** 1.2);
+            if (mk === "gut") p.by += 6;
+            if (mk === "uppercut") p.by += 5 - 8 * t;
+            if (mk === "super") p.by += lerp(14, -6, t);
+            if (mk === "haymaker") p.bx += lerp(-m * 6, m * 8, t);
+          }
+        } else if (st === "stunned" || st === "deflect") {
+          // your parry bats the glove out wide (or snaps his head back out of the bite)
+          const k = clamp(d.t / 0.2, 0, 1),
+            KNOCK = [m * 70, 72, 13],
+            home = m > 0 ? GL : GR;
+          if (mk === "bite") {
+            if (k < 1) p.bite = 1 - easeOut(k);
+          } else if (mk === "super") set(m, to(wind(mk), home, easeOut(k)));
+          else if (k < 1) throwAt(m, KNOCK, hitAt(mk), 1 - easeOut(k));
+          else set(m, to(KNOCK, home, smooth(0.2, 0.45, d.t)));
+          if (st === "stunned") {
+            if (d.cineUpper) {
+              // the finale: his fist knocked aside, then your uppercut snaps his head back
+              const ct = game.cine ? game.cine.t : 9,
+                snap = d.chinHit ? 1 - smooth(1.1, 1.9, ct) : 0;
+              set(m, [m * 64, 60, 13]);
+              p.hyo -= 12 * snap;
+              p.by -= 5 * snap;
+              p.hxo -= m * 4 * snap;
+              if (snap > 0) {
+                guardTo(
+                  [
+                    [44, 70, 12],
+                    [-44, 72, 12],
+                  ],
+                  snap,
+                );
+                p.eyes = "dazed";
+                p.mouth = "open";
+                p.open = snap;
+              }
+            }
+            daze(easeOut(clamp((d.t - 0.2) / 0.3, 0, 1)));
+            p.weak = clamp(p.weakT / 0.08, 0, 1);
+          }
+        } else if (st === "recover") {
+          daze(1 - easeOut(clamp(d.t / 0.35, 0, 1)));
+          p.weak = 1 - clamp(d.t / 0.2, 0, 1);
+        } else if (st === "follow") {
+          // pulls the punch back from your face
+          const u = clamp(d.t / d.followDur, 0, 1),
+            back = easeOut(clamp(u / 0.5, 0, 1));
+          if (mk === "bite") p.bite = 1 - back;
+          else if (back < 1) throwAt(m, wind(mk), hitAt(mk), 1 - back);
+          else
+            set(m, to(wind(mk), m > 0 ? GL : GR, easeOut((u - 0.5) / 0.5)));
+          p.mouth = "smirk";
+        } else if (st === "guard" || st === "clash") {
+          // peek-a-boo: gloves up over his face. Swing into them and he parries you
+          const k = easeOut(clamp(d.t / 0.08, 0, 1));
+          guardTo(HIGH, k);
+          p.hxo *= 1 - k;
+          p.eyes = "mad";
+          if (st === "clash")
+            p.bx += Math.sin(d.t * 80) * 2 * (1 - clamp(d.t / 0.2, 0, 1));
+        } else if (st === "dying") {
+          const u = d.t;
+          if (u < 0.6) {
+            daze(1);
+            p.bx += Math.sin(u * 60) * 3 * (1 - u / 0.6);
+          } else {
+            // over he goes: arms flung out, then down out of the frame
+            const k = easeOut(clamp((u - 0.6) / 0.5, 0, 1)),
+              c = clamp((u - 1.4) / 1.2, 0, 1);
+            p.by += 2 * hop;
+            guardTo(
+              [
+                [52, 58, 12],
+                [-52, 60, 12],
+              ],
+              k,
+            );
+            p.hyo -= 8 * k;
+            p.by += 18 * k;
+            p.eyes = "ko";
+            p.mouth = "open";
+            p.open = 0.7;
+            p.sink = 130 * c * c;
+          }
+        }
+
+        if (d.flinch > 0) {
+          p.bx += d.flinchDir * 6 * d.flinch;
+          p.hxo += d.flinchDir * 3 * d.flinch;
+          p.hyo += 2 * d.flinch;
+        }
+        const cx = 128 + p.bx,
+          abs = (v) => v && [cx + v[0], v[1] + p.by, v[2]];
+        p.gl = abs(gl);
+        p.gr = abs(gr);
+        p.head = [cx + p.hxo, 54 + p.by + p.hyo];
+        if (p.bite !== null) {
+          // the bite: his head comes at your ear
+          const e = easeOut(clamp(p.bite, 0, 1));
+          p.head = [lerp(p.head[0], 128 + m * 66, e), lerp(p.head[1], 100, e)];
+          p.hs = lerp(1, 3.2, e);
+        }
+        p.eyeAt = [p.head[0] - 7 * p.hs, p.head[1] - p.hs];
+        p.weakAt = [cx, 108 + p.by];
+        p.shoulders = [
+          [cx - 40, 90 + p.by],
+          [cx + 40, 90 + p.by],
+        ];
+        p.punches = p.punches.map(({ s, from, at, k }) => {
+          const f = abs(from),
+            [sx, sy] = p.shoulders[s > 0 ? 1 : 0];
+          return {
+            s,
+            x: lerp(f[0], at[0], k),
+            y: lerp(f[1], at[1], k),
+            r: lerp(f[2], at[2], k),
+            sx,
+            sy,
+          };
+        });
+        const fist = get(m) && abs(get(m));
+        if (chargeK > 0 && fist) p.charge = [fist[0], fist[1], chargeK];
+        return p;
+      }
+
       /* ================= Player drawing ================= */
       const SWING = 0.26;
       const SWING_KEYS = [
@@ -4981,6 +6324,7 @@
         }
       }
       function drawPlayer() {
+        if (L.gloves) return drawBoxer();
         const P = player,
           T = game.time;
         const bob = Math.sin(T * 2.4);
@@ -5033,6 +6377,160 @@
           sh.x,
           sh.y + bob * 0.8 + drop + fall,
           sh.r,
+          P.shieldFlash > 0,
+        );
+      }
+      // Mike's level: your right glove punches (it rides the sword swing's timing), your left parries (the shield's)
+      function punchPose() {
+        const P = player,
+          REST = { x: 206, y: 192, s: 1, k: 0 };
+        if (game.cine && boss.cineUpper) {
+          // the finale's uppercut: dip, drive up under his chin, follow through, come home
+          const ct = game.cine.t,
+            [hx, hy] = lastPose && lastPose.head ? lastPose.head : [128, 60],
+            cx = hx + 4,
+            cy = hy + 18;
+          if (ct < 0.15) {
+            const e = easeOut(ct / 0.15);
+            return {
+              x: lerp(REST.x, 194, e),
+              y: lerp(REST.y, 214, e),
+              s: 1,
+              k: 0,
+            };
+          }
+          if (ct < 0.55) {
+            const e = ((ct - 0.15) / 0.4) ** 2;
+            return {
+              x: lerp(194, cx, e),
+              y: lerp(214, cy, e),
+              s: lerp(1, 0.5, e),
+              k: e,
+            };
+          }
+          if (ct < 0.85)
+            return {
+              x: cx,
+              y: cy - 26 * easeOut((ct - 0.55) / 0.3),
+              s: 0.5,
+              k: 0,
+            };
+          const e = easeOut(clamp((ct - 0.85) / 0.7, 0, 1));
+          return {
+            x: lerp(cx, REST.x, e),
+            y: lerp(cy - 26, REST.y, e),
+            s: lerp(0.5, 1, e),
+            k: 0,
+          };
+        }
+        if (P.swingT >= 0 && P.swingT < SWING) {
+          const s = P.swingT / SWING,
+            k =
+              s < 0.32
+                ? easeOut(s / 0.32)
+                : s < 0.48
+                  ? 1
+                  : 1 - easeOut((s - 0.48) / 0.52);
+          return {
+            x: lerp(REST.x, 148, k),
+            y: lerp(REST.y, 112, k),
+            s: lerp(1, 0.6, k),
+            k: s < 0.32 ? k : 0,
+          };
+        }
+        if (P.recoilT >= 0 && P.recoilT < 0.4) {
+          // punched into his guard: it bounces off
+          const u = P.recoilT / 0.4,
+            k = 0.4 * Math.sin(u * Math.PI);
+          return {
+            x: lerp(REST.x, 148, k) + Math.sin(P.recoilT * 90) * 2 * (1 - u),
+            y: lerp(REST.y, 112, k),
+            s: lerp(1, 0.6, k),
+            k: 0,
+          };
+        }
+        return REST;
+      }
+      // your gloves from behind: laced cuff, forearm running off the bottom of the screen (base), thumb on the inside
+      function drawMyGlove(x, y, s, side, base, hot) {
+        const pal = hot ? HOT_GLOVE : MY_GLOVE,
+          [bx, by] = base,
+          wx = x + side * 3 * s,
+          wy = y + 22 * s,
+          tx = x - side * 18 * s,
+          ty = y + 5 * s;
+        limb(bx, by, 30, wx, wy, 14 * s, "#4a2e1c");
+        limb(bx, by, 28, wx, wy, 12.5 * s, "#9a6440");
+        limb(bx + side * 10, by, 10, wx + side * 6 * s, wy, 4 * s, "#7a4c30");
+        limb(bx - side * 10, by, 8, wx - side * 4 * s, wy, 3.5 * s, "#c08250");
+        ell(wx, wy, 16 * s + 1, 9 * s + 1, "#4a463e");
+        ell(wx, wy, 16 * s, 9 * s, hot ? "#ffffff" : TY.lace);
+        for (let i = -1; i <= 1; i++)
+          rect(wx - 3 * s, wy + i * 3 * s, 6 * s, 1, "#b0a898");
+        ell(x, y, 23 * s + 1, 25 * s + 1, pal[0]);
+        ell(x, y, 23 * s, 25 * s, pal[1]);
+        ell(x + side * 2 * s, y - 3 * s, 20 * s, 21 * s, pal[2]);
+        ell(x - 5 * s, y - 13 * s, 11 * s, 7 * s, pal[3]);
+        rect(x - 11 * s, y - 18 * s, 4 * s, 2 * s, pal[4]);
+        ell(tx, ty, 8 * s + 1, 13 * s + 1, pal[0]);
+        ell(tx, ty, 8 * s, 13 * s, pal[1]);
+        ell(tx + side * s, ty - 2 * s, 5.5 * s, 10 * s, pal[2]);
+        rect(tx - s, ty - 8 * s, 2 * s, 3 * s, pal[3]);
+      }
+      function drawBoxer() {
+        const P = player,
+          T = game.time,
+          bob = Math.sin(T * 2.4);
+        const drop =
+          P.hurtT >= 0 && P.hurtT < 0.5 ? 16 * (1 - P.hurtT / 0.5) : 0;
+        const fall =
+          game.mode === "loseAnim" || game.mode === "lose"
+            ? Math.min(1, game.modeT * 1.2) * 60
+            : 0;
+        // in his intro he swats your sword and shield off screen, and your gloves come up in their place
+        const it = game.mode === "intro" ? game.modeT : Infinity,
+          gone = (t0) => clamp((it - t0) / 0.55, 0, 1),
+          us = gone(TY_T.swat),
+          uh = gone(TY_T.swat + 0.12);
+        if (us < 1)
+          drawSword(
+            226 + 150 * us,
+            222 + bob - 220 * us + 120 * us * us,
+            -1.92 + 12 * us,
+          );
+        if (uh < 1)
+          drawShield(
+            40 - 150 * uh,
+            214 + bob * 0.8 - 180 * uh + 120 * uh * uh,
+            42,
+            false,
+          );
+        const rise =
+          110 * (1 - easeOut(clamp((it - TY_T.gloves) / 0.45, 0, 1)));
+        if (rise >= 110) return;
+        const pp = punchPose(),
+          sh = shieldPose(),
+          lift = drop + fall + rise;
+        if (pp.k > 0.15) {
+          // speed lines trailing the punch
+          ctx.globalAlpha = 0.6;
+          for (const o of [-12, 0, 12])
+            line(
+              pp.x + o + 18 * pp.s,
+              pp.y + bob + 34 * pp.s,
+              pp.x + o + 40 * pp.s,
+              pp.y + bob + 74 * pp.s,
+              "#cfe0ff",
+            );
+          ctx.globalAlpha = 1;
+        }
+        drawMyGlove(pp.x, pp.y + bob + lift, pp.s, 1, [246, 268], false);
+        drawMyGlove(
+          sh.x + 14,
+          sh.y - 22 + bob * 0.8 + lift,
+          sh.r / 44,
+          -1,
+          [10, 268],
           P.shieldFlash > 0,
         );
       }
@@ -5188,17 +6686,35 @@
             lens(f.x0, f.y0, x1, y1, f.w * 0.6, "#e0303c");
             lens(f.x0, f.y0, x1, y1, f.w * 0.2, "#ffffff");
           } else if (f.type === "pierce") {
-            const prog = clamp(f.t / 0.08, 0, 1);
+            // centred unless it says where (a punch lands where it was aimed)
+            const prog = clamp(f.t / 0.08, 0, 1),
+              px = f.x ?? 122,
+              py = f.y ?? 128;
             ctx.globalAlpha = 1 - smooth(0.4, 1, u);
             for (let i = 0; i < 9; i++) {
               const a = (i / 9) * TAU + 0.3,
                 r = (40 + (i % 3) * 22) * prog,
-                x = 122 + Math.cos(a) * r,
-                y = 128 + Math.sin(a) * r;
-              lens(122, 128, x, y, 4, "#5a0a14");
-              lens(122, 128, x, y, 2, "#e0303c");
+                x = px + Math.cos(a) * r,
+                y = py + Math.sin(a) * r;
+              lens(px, py, x, y, 4, "#5a0a14");
+              lens(px, py, x, y, 2, "#e0303c");
             }
-            circ(122, 128, 10 * (1 - u), "#ffffff");
+            circ(px, py, 10 * (1 - u), "#ffffff");
+          } else if (f.type === "bite") {
+            // tooth marks where he got your ear
+            const x0 = f.side > 0 ? 222 : 34;
+            ctx.globalAlpha = 1 - smooth(0.4, 1, u);
+            for (let i = 0; i < 6; i++) {
+              const a = lerp(-1, 1, i / 5),
+                x = x0 + a * 18;
+              for (const ty of [
+                100 - (1 - a * a) * 6,
+                126 + (1 - a * a) * 6,
+              ]) {
+                rect(x - 2, ty - 3, 4, 6, "#5a0a14");
+                rect(x - 1, ty - 2, 2, 4, "#e0303c");
+              }
+            }
           } else if (f.type === "sweep") {
             const prog = clamp(f.t / 0.08, 0, 1);
             ctx.globalAlpha = 1 - smooth(0.35, 1, u);
@@ -5693,7 +7209,135 @@
             tone(f, f * 0.98, 0.3, "triangle", 0.14, 0.25 * i),
           );
         },
+        // Mike's level
+        jabWindup() {
+          hiss(0.06, 0.06, 2600, 0, "highpass");
+        },
+        jabStrike() {
+          hiss(0.1, 0.24, 1600, 4200, "bandpass", 0, false, 1.5);
+        },
+        gutWindup() {
+          tone(150, 110, 0.12, "sawtooth", 0.06);
+          hiss(0.1, 0.06, 900, 0, "lowpass");
+        },
+        gutStrike() {
+          hiss(0.18, 0.28, 700, 2600, "bandpass", 0, false, 1.4);
+          tone(170, 80, 0.15, "square", 0.08);
+        },
+        haymakerWindup(d) {
+          hiss(d, 0.07, 300, 1500, "bandpass", 0, true, 1.5);
+          tone(100, 150, d, "sawtooth", 0.05, 0, true);
+        },
+        haymakerStrike() {
+          hiss(0.3, 0.32, 400, 3000, "bandpass", 0, false, 1.4);
+          tone(210, 70, 0.28, "sawtooth", 0.1);
+        },
+        uppercutWindup() {
+          tone(120, 95, 0.12, "square", 0.08);
+          hiss(0.1, 0.08, 1300, 0, "lowpass");
+        },
+        uppercutStrike() {
+          hiss(0.22, 0.3, 500, 4200, "bandpass", 0, false, 1.5);
+          tone(110, 320, 0.2, "sawtooth", 0.1);
+        },
+        biteWindup() {
+          tone(150, 115, 0.3, "sawtooth", 0.08);
+          hiss(0.25, 0.1, 900, 400, "lowpass");
+        },
+        biteStrike() {
+          tone(320, 110, 0.08, "square", 0.14);
+          hiss(0.08, 0.3, 3200, 0, "highpass");
+        },
+        // the charge: returned so breaking it can cut it off
+        superWindup(d) {
+          return [
+            tone(60, 260, d, "sawtooth", 0.08, 0, true),
+            tone(120, 520, d, "triangle", 0.05, 0, true),
+            hiss(d, 0.1, 400, 4200, "bandpass", 0, true, 3),
+          ];
+        },
+        superStrike() {
+          hiss(0.5, 0.38, 300, 5000, "bandpass", 0, false, 1);
+          tone(80, 420, 0.3, "sawtooth", 0.16);
+        },
+        // your gloves: leather, not steel
+        glovePop() {
+          tone(260, 150, 0.09, "square", 0.12);
+          hiss(0.09, 0.34, 2200, 500, "lowpass");
+        },
+        glovePopHeavy(k) {
+          sfx.glovePop();
+          tone(110, 45, 0.3 + 0.2 * k, "sine", 0.35 * k);
+          hiss(0.2 + 0.1 * k, 0.3 * k, 1400, 200, "lowpass");
+        },
+        punchSwish() {
+          hiss(0.09, 0.12, 2200, 900, "bandpass", 0, false, 1.5);
+        },
+        punchHit() {
+          tone(160, 60, 0.14, "square", 0.18);
+          hiss(0.12, 0.34, 1800, 250, "lowpass");
+        },
+        gloveBlock() {
+          tone(210, 160, 0.08, "square", 0.1);
+          hiss(0.07, 0.24, 1400, 300, "lowpass");
+        },
+        gloveClash() {
+          tone(300, 190, 0.1, "square", 0.12);
+          tone(120, 70, 0.15, "sine", 0.25);
+          hiss(0.08, 0.3, 2600, 600, "lowpass");
+        },
+        gloveTaps() {
+          [0.08, 0.3].forEach((t) => {
+            tone(190, 130, 0.08, "square", 0.12, t);
+            hiss(0.06, 0.25, 1300, 0, "lowpass", t);
+          });
+        },
+        chinHit() {
+          tone(80, 30, 0.9, "sine", 0.45);
+          tone(200, 60, 0.3, "square", 0.14);
+          hiss(0.6, 0.4, 2400, 150, "lowpass");
+        },
+        talk() {
+          const f = rand(230, 270);
+          tone(f, f * 0.9, 0.04, "square", 0.04);
+        },
+        crowd(delay = 0) {
+          hiss(1.8, 0.14, 1000, 700, "bandpass", delay, false, 0.5);
+          hiss(1.4, 0.08, 2600, 1800, "bandpass", delay + 0.1, false, 0.9);
+        },
+        grunt(delay = 0) {
+          tone(200, 130, 0.5, "sawtooth", 0.1, delay);
+          hiss(0.4, 0.12, 1400, 600, "bandpass", delay, false, 1);
+        },
+        bell(delay = 0) {
+          [0, 0.3].forEach((t) => {
+            tone(1250, 1240, 1.1, "triangle", 0.12, delay + t);
+            tone(2520, 2500, 0.7, "sine", 0.06, delay + t);
+            tone(3760, 3740, 0.4, "sine", 0.03, delay + t);
+          });
+        },
+        knockdown(delay = 0) {
+          sfx.crowd(delay + 0.3);
+          tone(90, 40, 0.4, "square", 0.16, delay + 0.5);
+          hiss(0.4, 0.3, 800, 100, "lowpass", delay + 0.5);
+        },
+        // the code screen
+        codeBlip(n) {
+          const f = 440 + n * 40;
+          tone(f, f, 0.06, "square", 0.06);
+        },
+        codeGood() {
+          [523, 659, 784, 1047, 1319, 1568].forEach((f, i) =>
+            tone(f, f, 0.09, "square", 0.07, 0.06 * i),
+          );
+        },
+        codeBad() {
+          tone(196, 147, 0.25, "square", 0.1);
+          tone(185, 139, 0.25, "square", 0.06, 0.02);
+        },
       };
+      // a level can swap in its own sounds for your actions (Mike's: leather gloves, not a sword and shield)
+      const play = (k, ...a) => ((L.sounds && L.sounds[k]) || sfx[k])(...a);
 
       /* ================= Game state ================= */
       // realtime effects (impactT, star, punch*, slowT, cine) run on wall-clock time so they play through hitstop and slow-mo
@@ -5879,9 +7523,85 @@
           },
           winText: "The lich is put to rest",
         },
+        {
+          moves: TYSON_MOVES,
+          chainWindup: TYSON_CHAIN,
+          deflect: TYSON_DEFLECT,
+          weights: {
+            jab: 0.3,
+            gut: 0.16,
+            haymaker: 0.17,
+            uppercut: 0.17,
+            bite: 0.08,
+            super: 0.12,
+          },
+          first: "jab",
+          opening: ["jab", "super"],
+          counter: "jab",
+          doubleKey: null,
+          combos: TYSON_COMBOS,
+          comboChance: 0.45,
+          rageCombo: tysonRageCombo,
+          feint: 0.2,
+          feintRage: 0.3,
+          feintInto: {
+            jab: "uppercut",
+            gut: "haymaker",
+            haymaker: "uppercut",
+            uppercut: "gut",
+          },
+          glintLead: 0.14,
+          // like the knight he puts his guard up mid-opening, but after 2 or 3 hits, you never know which
+          counterAfter: [2, 3],
+          riposte: "jab",
+          hp: 25,
+          rageAt: 15,
+          idle: [0.5, 1.1],
+          idleRage: [0.3, 0.7],
+          introDur: TY_T.end,
+          introSkip: TY_T.talkEnd,
+          gloves: true,
+          secret: true,
+          bg: bgTyson,
+          pose: tysonPose,
+          drawBoss: drawTysonBody,
+          front: tysonFront,
+          backdrop: tysonBackdrop,
+          ambient: tysonAmbient,
+          shadow: [50, "#0c1030"],
+          sparks: TY.sweat,
+          shout: (d) => {
+            sfx.crowd(d);
+            sfx.grunt(d);
+          },
+          death: (d) => sfx.knockdown(d),
+          snarl: () => sfx.gloveTaps(),
+          sounds: {
+            parry: () => sfx.glovePop(),
+            parryHeavy: (k) => sfx.glovePopHeavy(k),
+            swing: () => sfx.punchSwish(),
+            hit: () => sfx.punchHit(),
+            block: () => sfx.gloveBlock(),
+            clash: () => sfx.gloveClash(),
+          },
+          onInterrupt: tysonBreak,
+          // the rage combo's last hit: your left glove knocks his fist aside, your right comes up under his chin
+          onCine: () => {
+            Object.assign(boss, { cineUpper: true, chinHit: false });
+            Object.assign(player, {
+              shieldMode: "block",
+              shieldT: 0,
+              shieldFlash: 0.04,
+              shieldKick: 1,
+            });
+          },
+          winText: "Mike is down for the count",
+        },
       ];
+      const SECRET = LEVELS.findIndex((l) => l.secret);
       let levelIdx = 0,
         L = LEVELS[0];
+      const bossHp = () => L.hp || CFG.bossHits;
       const store = {
         get(k) {
           try {
@@ -6025,6 +7745,74 @@
           flashScreen("#ffffff", 0.7, 0.18);
           hitstop(0.14);
         },
+        jab: (d) => {
+          fx.push({
+            type: "pierce",
+            t: 0,
+            dur: 0.45,
+            x: 128 + d.side * 10,
+            y: 116,
+          });
+          shake(3, 0.2);
+          flashScreen("#ff2030", 0.3, 0.2);
+        },
+        gut: () => {
+          fx.push({ type: "pierce", t: 0, dur: 0.7, x: 128, y: 172 });
+          shake(7, 0.4);
+          flashScreen("#ff2030", 0.5, 0.3);
+          hitstop(0.1);
+        },
+        haymaker: (d) => {
+          fx.push({
+            type: "cut",
+            t: 0,
+            dur: 0.8,
+            x0: 128 + d.side * 150,
+            y0: 96,
+            x1: 128 - d.side * 130,
+            y1: 132,
+            w: 10,
+          });
+          shake(8, 0.5);
+          flashScreen("#ffffff", 0.6, 0.15);
+          hitstop(0.12);
+        },
+        uppercut: () => {
+          fx.push({
+            type: "cut",
+            t: 0,
+            dur: 0.8,
+            x0: 122,
+            y0: 234,
+            x1: 134,
+            y1: -10,
+            w: 10,
+          });
+          shake(8, 0.5);
+          flashScreen("#ffffff", 0.6, 0.15);
+          hitstop(0.12);
+        },
+        bite: (d) => {
+          fx.push({ type: "bite", t: 0, dur: 0.9, side: d.side });
+          shake(4, 0.3);
+          flashScreen("#ff2030", 0.5, 0.3);
+        },
+        super: () => {
+          fx.push({
+            type: "cut",
+            t: 0,
+            dur: 1,
+            x0: 120,
+            y0: 240,
+            x1: 136,
+            y1: -20,
+            w: 18,
+          });
+          fx.push({ type: "pierce", t: 0, dur: 0.8, x: 128, y: 108 });
+          shake(12, 0.7);
+          flashScreen("#ffffff", 0.9, 0.25);
+          hitstop(0.22);
+        },
       };
       const PARRY_AT = {
         claw: (s) => [108 + s * 6, 124],
@@ -6041,6 +7829,12 @@
         spear: (s) => [112 + s * 10, 150],
         curse: () => [112, 130],
         doom: () => [112, 120],
+        jab: (s) => [114 + s * 12, 122],
+        gut: () => [112, 158],
+        haymaker: (s) => [106 + s * 30, 124],
+        uppercut: () => [112, 142],
+        bite: (s) => [112 + s * 24, 116],
+        super: () => [112, 140],
       };
 
       let shakeT = 0,
@@ -6163,11 +7957,15 @@
           glinted: false,
           fromG: lastPose && lastPose.G ? lastPose.G : null,
         });
-        d.side = o.side || (Math.random() < 0.5 ? -1 : 1);
+        d.side = o.side || m.side || (Math.random() < 0.5 ? -1 : 1);
         d.n = o.n || 0; // place in a volley: the lich's orbs each sound their own note
+        // hits it takes to break a charge (Mike's rage-combo super uppercut takes 3)
+        d.needs = o.needs || 1;
+        d.breaks = 0;
         d.feint = o.chained
           ? !!o.feint
           : d.last.length > 1 &&
+            !!L.feintInto[key] &&
             Math.random() < (d.raged ? L.feintRage : L.feint);
         if (!o.chained) {
           d.queue = [];
@@ -6175,6 +7973,13 @@
           if (key === L.doubleKey && Math.random() < CFG.doubleClaw) {
             d.queue = [key];
             d.chain = "double";
+          }
+          // a combo that opens with this move carries on from it
+          const combos = (L.combos || []).filter((c) => c[0] === key);
+          if (combos.length && Math.random() < L.comboChance) {
+            d.queue =
+              combos[Math.floor(Math.random() * combos.length)].slice(1);
+            d.chain = "combo";
           }
           if (key === L.volley) {
             const n = d.raged
@@ -6212,6 +8017,7 @@
           feint: s.feint,
           n: s.n,
           windup: s.windup,
+          needs: s.needs,
           side:
             s.side ||
             (s.key === d.moveKey && s.key === L.doubleKey ? -d.side : 0),
@@ -6219,7 +8025,11 @@
       }
       function startCombo() {
         const d = boss;
-        d.queue = L.rageCombo.slice();
+        // a level can build its rage combo fresh each time (Mike shuffles his)
+        d.queue =
+          typeof L.rageCombo === "function"
+            ? L.rageCombo()
+            : L.rageCombo.slice();
         d.chain = "rage";
         nextInChain();
       }
@@ -6256,7 +8066,11 @@
       }
       function toIdle(dur) {
         const d = boss;
-        if (game.mode === "fight" && d.hits >= CFG.rageAt && !d.raged) {
+        if (
+          game.mode === "fight" &&
+          d.hits >= (L.rageAt || CFG.rageAt) &&
+          !d.raged
+        ) {
           d.raged = true;
           d.comboPending = !!L.rageCombo;
           d.state = "rageRoar";
@@ -6267,20 +8081,24 @@
           shake(3, 1.1);
           return;
         }
-        const r = d.raged ? CFG.idleRage : CFG.idle;
+        const r = d.raged
+          ? L.idleRage || CFG.idleRage
+          : L.idle || CFG.idle;
         Object.assign(d, {
           state: "idle",
           t: 0,
           moveKey: null,
           move: null,
           disarmed: false,
+          cineUpper: false,
           idleDur: dur ?? rand(r[0], r[1]),
         });
       }
       function landHit() {
         const d = boss,
-          before = player.hp;
-        player.hp = Math.max(0, player.hp - d.move.dmg);
+          before = player.hp,
+          dmg = d.raged && d.move.rageDmg ? d.move.rageDmg : d.move.dmg;
+        player.hp = Math.max(0, player.hp - dmg);
         stats.taken += before - player.hp;
         for (let i = player.hp; i < before; i++) {
           hearts[i].breakT = -(before - 1 - i) * 0.07;
@@ -6319,8 +8137,8 @@
         const d = boss;
         if (d.state === "strike" && !d.move.unparryable) {
           stats.parries++;
-          // k: 0 for light hits, 0.5 for 2-heart hits, 1 for the 3-heart heavies
-          const k = clamp((d.move.dmg - 1) / 2, 0, 1),
+          // k: 0 for light hits, 0.5 for 2-heart hits, 1 for the 3-heart heavies (or the move's own heft)
+          const k = d.move.heft ?? clamp((d.move.dmg - 1) / 2, 0, 1),
             finale = d.chain === "rage" && d.queue.length === 0;
           const at = PARRY_AT[d.moveKey](d.side);
           Object.assign(player, {
@@ -6372,8 +8190,8 @@
               game.impactT = 0.07;
               game.slowT = game.slowDur = 0.35;
             }
-            if (k > 0) sfx.parryHeavy(k);
-            else sfx.parry();
+            if (k > 0) play("parryHeavy", k);
+            else play("parry");
           }
           if (L.onParry) L.onParry(at);
           // knight's exchange: he reels open and you have to swing
@@ -6400,14 +8218,14 @@
             shieldT: 0,
             lock: CFG.whiffLock,
           });
-          sfx.whiff();
+          play("whiff");
         }
       }
       function doAttack() {
         const d = boss;
         player.swingT = 0;
         player.lock = CFG.attackCooldown;
-        sfx.swing();
+        play("swing");
         if (d.state === "stunned") {
           d.hits++;
           stats.hits++;
@@ -6416,7 +8234,7 @@
           d.flinchDir = -d.flinchDir;
           hitstop(0.05);
           shake(2, 0.12);
-          sfx.hit();
+          play("hit");
           // a knight's lit crack is where the sparks come from
           const [sx, sy] =
             lastPose && lastPose.weak > 0
@@ -6430,11 +8248,15 @@
             size: [1, 2],
           });
           d.openHits = (d.openHits || 0) + 1;
-          if (d.hits >= CFG.bossHits) bossDies();
+          // how many hits this opening gives you before the guard comes up (the knight: 3; Mike: 2 or 3)
+          const guards = [].concat(L.counterAfter || []);
+          if (d.openHits === 1)
+            d.guardAt = guards[Math.floor(Math.random() * guards.length)];
+          if (d.hits >= bossHp()) bossDies();
           else if (
-            L.counterAfter &&
+            guards.length &&
             d.chain !== "rage" &&
-            d.openHits >= L.counterAfter
+            d.openHits >= d.guardAt
           ) {
             // the knight only gives you so many: his visor flares and the shield comes up
             d.state = "guard";
@@ -6444,14 +8266,15 @@
         } else if (d.state === "open" || d.state === "guard") {
           parriedByBoss(d.state === "open");
         } else if (d.state === "windup" && d.move.channel) {
-          interrupt();
+          if (++d.breaks < d.needs) chip();
+          else interrupt();
         } else {
           Object.assign(player, {
             lock: CFG.blockedLock,
             recoilT: 0,
             swingT: -1,
           });
-          sfx.block();
+          play("block");
           shake(1, 0.1);
           burst(150, 120, 8, {
             speed: [40, 110],
@@ -6475,11 +8298,35 @@
         hitstop(0.3);
         L.death(0.7);
       }
+      // a hit on a charge that takes more than one to break: it rocks him, but he keeps charging
+      function chip() {
+        const d = boss,
+          [x, y] = lastPose && lastPose.weakAt ? lastPose.weakAt : [128, 104];
+        d.hits++;
+        stats.hits++;
+        d.flash = 0.06;
+        d.flinch = 1;
+        d.flinchDir = -d.flinchDir;
+        hitstop(0.06);
+        shake(3, 0.15);
+        play("hit");
+        burst(x, y, 16, {
+          speed: [40, 140],
+          life: [0.15, 0.35],
+          g: 120,
+          cols: ["#ffffff", C.f0, C.f1],
+          size: [1, 2],
+        });
+        fx.push({ type: "ring", t: 0, dur: 0.3, x, y, r1: 44 });
+        if (d.hits >= bossHp()) bossDies();
+      }
       // your sword breaks a channelled spell (the lich's curse): it counts as a hit and he reels.
-      // Mid-combo he shakes it off and carries on; otherwise he's open for more
+      // Mid-combo he shakes it off and carries on; otherwise he's open for more.
+      // Breaking the charge that ends a rage combo (Mike's super uppercut) plays the cinematic
       function interrupt() {
         const d = boss,
-          at = lastPose && lastPose.weakAt ? lastPose.weakAt : [128, 104];
+          at = lastPose && lastPose.weakAt ? lastPose.weakAt : [128, 104],
+          finale = d.chain === "rage" && d.queue.length === 0;
         d.hits++;
         stats.hits++;
         silence(d.channelSnd);
@@ -6487,16 +8334,19 @@
         d.flash = 0.08;
         d.flinch = 1.6;
         d.flinchDir = -d.flinchDir;
-        game.star = { t: 0, dur: 0.18, x: at[0], y: at[1], s: 26 };
-        fx.push({ type: "ring", t: 0, dur: 0.4, x: at[0], y: at[1], r1: 80 });
-        hitstop(0.14);
-        shake(6, 0.3);
-        flashScreen("#ffffff", 0.45, 0.1);
-        punch(0.05, at);
-        sfx.hit();
-        sfx.shatter();
+        if (finale) startCinematic(at);
+        else {
+          game.star = { t: 0, dur: 0.18, x: at[0], y: at[1], s: 26 };
+          fx.push({ type: "ring", t: 0, dur: 0.4, x: at[0], y: at[1], r1: 80 });
+          hitstop(0.14);
+          shake(6, 0.3);
+          flashScreen("#ffffff", 0.45, 0.1);
+          punch(0.05, at);
+          play("hit");
+          sfx.shatter();
+        }
         if (L.onInterrupt) L.onInterrupt(at);
-        if (d.hits >= CFG.bossHits) bossDies();
+        if (d.hits >= bossHp()) bossDies();
         else if (d.queue.length) {
           d.state = "deflect";
           d.t = 0;
@@ -6506,7 +8356,7 @@
             state: "stunned",
             t: 0,
             openHits: 0,
-            stunDur: d.move.stun,
+            stunDur: finale ? CFG.comboStun : d.move.stun,
           });
         }
       }
@@ -6518,7 +8368,7 @@
           recoilT: 0,
           swingT: -1,
         });
-        sfx.clash();
+        play("clash");
         shake(3, 0.15);
         hitstop(0.06);
         burst(136, 106, 18, {
@@ -6533,6 +8383,9 @@
         d.clashNext = exchange ? "chain" : "riposte";
       }
       function act(a) {
+        // a press while Mike talks skips ahead to his swat
+        if (game.mode === "intro" && L.introSkip && game.modeT < L.introSkip)
+          game.modeT = L.introSkip;
         if (game.mode !== "fight" || game.cine) return;
         if (player.lock > 0) {
           player.buffer = { act: a, at: game.realTime };
@@ -6556,6 +8409,7 @@
             if (
               L.glintLead &&
               !d.feint &&
+              !d.move.unparryable &&
               !d.glinted &&
               d.t >= d.windup - L.glintLead
             ) {
@@ -6653,7 +8507,10 @@
               else {
                 d.queue = [];
                 d.chain = "riposte";
-                startMove("cut", { chained: true, windup: CFG.riposte });
+                startMove(L.riposte || "cut", {
+                  chained: true,
+                  windup: CFG.riposte,
+                });
               }
             }
             break;
@@ -7230,7 +9087,7 @@
             game.roared = true;
             shake(3, 0.9);
           }
-          if (game.modeT >= 1.9) {
+          if (game.modeT >= (L.introDur || 1.9)) {
             game.mode = "fight";
             game.modeT = 0;
             toIdle(0.7);
@@ -7251,12 +9108,14 @@
 
       const overlay = document.getElementById("overlay"),
         titlePanel = document.getElementById("titlePanel"),
-        endPanel = document.getElementById("endPanel");
+        endPanel = document.getElementById("endPanel"),
+        codePanel = document.getElementById("codePanel");
       const $ = (id) => document.getElementById(id);
       function showOverlay(which) {
         overlay.hidden = false;
         titlePanel.hidden = which !== "title";
-        endPanel.hidden = which === "title";
+        endPanel.hidden = which !== "end";
+        codePanel.hidden = which !== "code";
       }
       function startFight(idx = levelIdx) {
         levelIdx = idx;
@@ -7305,8 +9164,19 @@
           channelSnd: null,
           crumbled: false,
           crumbleT: 0,
+          needs: 1,
+          breaks: 0,
+          guardAt: 0,
+          cineUpper: false,
+          chinHit: false,
+          said: -1,
+          swatted: false,
+          swatted2: false,
+          belled: false,
         });
         Object.assign(KN, { next: rand(5, 9), bolt: 0 });
+        TYS.flashes = [];
+        bubble.hidden = true;
         Object.assign(stats, { parries: 0, hits: 0, taken: 0 });
         for (const h of hearts) h.breakT = null;
         parts = [];
@@ -7332,7 +9202,10 @@
         game.mode = won ? "win" : "lose";
         game.modeT = 0;
         const t = R(game.fightTime),
-          next = won && levelIdx + 1 < LEVELS.length;
+          next =
+            won &&
+            levelIdx + 1 < LEVELS.length &&
+            !LEVELS[levelIdx + 1].secret;
         if (next) {
           unlocked = Math.max(unlocked, levelIdx + 2);
           store.set("dragonDuelUnlocked", String(unlocked));
@@ -7361,9 +9234,10 @@
             : "Fight again";
         $("endHint").textContent = won ? "or press Enter" : "or press R";
         const replay = levelIdx;
+        // after the last duel you start over; the secret level just runs back
         endAction = next
           ? () => startFight(replay + 1)
-          : won
+          : won && !L.secret
             ? () => startFight(0)
             : () => startFight(replay);
         showOverlay("end");
@@ -7404,7 +9278,12 @@
         }
         audioOn();
         if (game.mode === "title") {
-          if (ours) startFight(0);
+          if (!codePanel.hidden) {
+            const c = CODE_KEYS[k];
+            if (c || k === "Escape" || k === "Space") e.preventDefault();
+            if (k === "Escape") openCode(false);
+            else if (c) codeInput(c);
+          } else if (ours) startFight(0);
           return;
         }
         if (game.mode === "win" || game.mode === "lose") {
@@ -7429,8 +9308,9 @@
           e.preventDefault();
           audioOn();
           press(btn);
-          if (game.mode === "title") startFight(0);
-          else act(a);
+          if (game.mode === "title") {
+            if (codePanel.hidden) startFight(0);
+          } else act(a);
         });
         btn.addEventListener("contextmenu", (e) => e.preventDefault());
       }
@@ -7453,6 +9333,92 @@
         toggleMute();
       });
 
+      /* ================= Secret code (title screen → Code) ================= */
+      const KONAMI = ["U", "U", "D", "D", "L", "R", "L", "R", "B", "A"],
+        GLYPH = { U: "▲", D: "▼", L: "◄", R: "►", B: "B", A: "A" },
+        CODE_KEYS = {
+          ArrowUp: "U",
+          ArrowDown: "D",
+          ArrowLeft: "L",
+          ArrowRight: "R",
+          KeyB: "B",
+          KeyZ: "B",
+          KeyA: "A",
+          KeyX: "A",
+          Enter: "START",
+          Backspace: "SELECT",
+        };
+      const codeRow = $("codeSlots"),
+        nesBtns = {};
+      for (let i = 0; i < KONAMI.length; i++)
+        codeRow.appendChild(document.createElement("span"));
+      let code = [],
+        codeBusy = false;
+      function showCode(state) {
+        [...codeRow.children].forEach((s, i) => {
+          s.textContent = code[i] ? GLYPH[code[i]] : "";
+          s.classList.toggle("on", i < code.length);
+        });
+        codeRow.className = "code-slots" + (state ? " " + state : "");
+      }
+      function openCode(open) {
+        showOverlay(open ? "code" : "title");
+        code = [];
+        showCode();
+      }
+      // SELECT clears, START checks early; the tenth press checks on its own
+      function codeInput(k) {
+        if (codeBusy) return;
+        audioOn();
+        if (nesBtns[k]) press(nesBtns[k]);
+        if (k === "SELECT") {
+          code = [];
+          showCode();
+          sfx.codeBlip(0);
+          return;
+        }
+        if (k !== "START") {
+          code.push(k);
+          sfx.codeBlip(code.length);
+          showCode();
+        }
+        if (k === "START" || code.length === KONAMI.length) checkCode();
+      }
+      function checkCode() {
+        const ok =
+          code.length === KONAMI.length && code.every((k, i) => k === KONAMI[i]);
+        codeBusy = true;
+        showCode(ok ? "good" : "bad");
+        ok ? sfx.codeGood() : sfx.codeBad();
+        setTimeout(
+          () => {
+            codeBusy = false;
+            code = [];
+            if (ok) startFight(SECRET);
+            else showCode();
+          },
+          ok ? 900 : 500,
+        );
+      }
+      for (const b of document.querySelectorAll(".nes [data-k]")) {
+        const k = b.dataset.k;
+        nesBtns[k] = b;
+        b.addEventListener("pointerdown", (e) => {
+          e.preventDefault();
+          codeInput(k);
+        });
+        // keyboard and assistive tech press it with a click instead
+        b.addEventListener("click", (e) => {
+          if (e.detail === 0) codeInput(k);
+        });
+        b.addEventListener("contextmenu", (e) => e.preventDefault());
+      }
+      $("codeBtn").addEventListener("click", () => {
+        audioOn();
+        openCode(true);
+      });
+      $("codeBack").addEventListener("click", () => openCode(false));
+
       /* ================= Sizing + loop ================= */
       const stage = $("stage"),
         frameEl = $("frame"),
@@ -7467,6 +9433,7 @@
         scale = Math.max(0.5, s);
         frameEl.style.width = W * scale + "px";
         frameEl.style.height = H * scale + "px";
+        frameEl.style.setProperty("--px", scale + "px");
       }
       new ResizeObserver(fit).observe(stage);
       fit();
@@ -7475,6 +9442,7 @@
       buildSamuraiBackground();
       buildKnightBackground();
       buildLichBackground();
+      buildTysonBackground();
       let last = performance.now();
       // one tick of wall-clock time: realtime effects, then hitstop or the (possibly slowed) game update
       function step(rdt) {
