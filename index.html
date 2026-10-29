@@ -229,10 +229,9 @@
         box-shadow: inset 0 0 0 2px var(--ember);
       }
       .title-actions {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 12px;
+        display: grid;
+        grid-template-columns: minmax(12rem, auto);
+        gap: 10px;
       }
       .fine {
         margin: 0;
@@ -898,7 +897,7 @@
         gut: {
           dmg: 4,
           rageDmg: 5,
-          windup: 0.7,
+          windup: 0.58,
           window: 0.2,
           stun: 0.9,
           follow: 0.55,
@@ -907,7 +906,7 @@
         haymaker: {
           dmg: 4,
           rageDmg: 5,
-          windup: [0.65, 0.85],
+          windup: [0.55, 0.72],
           window: 0.2,
           stun: 0.9,
           follow: 0.6,
@@ -916,7 +915,7 @@
         uppercut: {
           dmg: 4,
           rageDmg: 5,
-          windup: 0.36,
+          windup: 0.3,
           window: 0.2,
           stun: 1.5,
           follow: 0.7,
@@ -932,7 +931,7 @@
         },
         super: {
           dmg: 99,
-          windup: [1.6, 1.9],
+          windup: [0.85, 1.05],
           window: 0.16,
           stun: 1.4,
           follow: 0.9,
@@ -942,11 +941,11 @@
       };
       const TYSON_CHAIN = {
         jab: 0.24,
-        gut: 0.5,
-        haymaker: 0.48,
-        uppercut: 0.3,
+        gut: 0.42,
+        haymaker: 0.4,
+        uppercut: 0.26,
         bite: 0.3,
-        super: 2,
+        super: 1.15,
       };
       const TYSON_DEFLECT = {
         jab: 0.14,
@@ -969,7 +968,7 @@
           const j = Math.floor(Math.random() * (i + 1));
           [c[i], c[j]] = [c[j], c[i]];
         }
-        return [...c.flat(), { key: "super", windup: 2, needs: 3 }];
+        return [...c.flat(), { key: "super", windup: 1.15, needs: 3 }];
       }
 
       /* ================= Setup ================= */
@@ -5210,6 +5209,7 @@
         mouth: "#2a0a0c",
         teeth: "#f2ecdc",
         sweat: "#a8d4ff",
+        ink: "#120a0c", // face tattoo
       };
       // glove palettes, outline to shine: his red ones, your green ones, and yours lit white by a parry
       const TY_GLOVE = ["#3e080c", "#6e1016", "#a81a22", "#dc3a40", "#ff9a94"],
@@ -5521,35 +5521,55 @@
           Y = (v) => hy + v * s,
           S = (v) => Math.max(1, v * s),
           P = (pts) => pts.map((v, i) => (i % 2 ? Y(v) : X(v)));
+        // a tattoo stroke: a hairline at normal size, a thicker line up close
+        const ink = (pts) => {
+          for (let i = 0; i + 3 < pts.length; i += 2) {
+            const [x0, y0, x1, y1] = [X(pts[i]), Y(pts[i + 1]), X(pts[i + 2]), Y(pts[i + 3])];
+            if (s < 1.5) line(x0, y0, x1, y1, TY.ink);
+            else limb(x0, y0, 0.45 * s, x1, y1, 0.45 * s, TY.ink);
+          }
+        };
+        // his front teeth, gap and all
+        const teeth = (y, w, h) => {
+          rect(X(-w / 2), Y(y), S(w), S(h), TY.teeth);
+          rect(X(-0.5), Y(y), S(1), S(h), TY.mouth);
+        };
         for (const e of [-1, 1]) {
-          ell(X(e * 15), Y(1), S(3), S(5), TY.s2);
-          ell(X(e * 15.5), Y(1), S(1.4), S(3), TY.s1);
+          ell(X(e * 15), Y(1), S(2.5), S(4.5), TY.s2);
+          ell(X(e * 15.3), Y(1), S(1.2), S(2.6), TY.s1);
         }
-        // a broad skull and a heavy jaw, lit from your left
+        // shaved head: a round dome over a heavy jaw, lit from your left
         poly(
           P([
-            -13, -14, 13, -14, 15, -4, 15, 6, 11, 14, 5, 17, -5, 17, -11, 14,
-            -15, 6, -15, -4,
+            -11, -18, -5, -20, 5, -20, 11, -18, 15, -12, 16, -3, 15, 6, 11, 14,
+            5, 17, -5, 17, -11, 14, -15, 6, -16, -3, -15, -12,
           ]),
           TY.s2,
         );
         poly(
-          P([7, -12, 13, -14, 15, -4, 15, 6, 11, 14, 5, 17, 2, 17, 8, 8, 10, -2]),
+          P([
+            11, -18, 15, -12, 16, -3, 15, 6, 11, 14, 5, 17, 3, 17, 9, 9, 12, 0,
+            13, -10,
+          ]),
           TY.s1,
         );
-        ell(X(-7), Y(-8), S(5), S(3), TY.s3);
+        // the shine on his scalp, then forehead, cheekbone, chin
+        ell(X(-5), Y(-15), S(6), S(3), TY.s3);
+        ell(X(-7), Y(-16), S(2.5), S(1.2), TY.s4);
+        ell(X(-6), Y(-8), S(4), S(2), TY.s3);
         ell(X(-9), Y(5), S(3), S(4), TY.s3);
         ell(X(-2), Y(15), S(4), S(1.5), TY.s3);
-        // flat-top crop
-        poly(
-          P([
-            -14, -17, 14, -17, 15, -6, 12, -9, 6, -11, -6, -11, -12, -9, -15,
-            -6,
-          ]),
-          TY.hair,
-        );
-        rect(X(-12), Y(-17), S(10), S(1), "#2a201c");
-        // brows: knitted down when he's mad
+        // the tattoo curling round his left eye
+        for (const pts of [
+          [3, -6, 6, -8, 10, -9, 13, -7],
+          [7, -8, 6, -11, 8, -13, 11, -13],
+          [13, -7, 14, -4, 13, -2],
+          [5, 3, 9, 3, 12, 1, 13, -2],
+        ])
+          ink(pts);
+        // deep-set eyes under a heavy brow, knitted down when he's mad
+        rect(X(-11), Y(-2), S(7), S(1), TY.s1);
+        rect(X(3), Y(-2), S(7), S(1), TY.s1);
         const mad = p.eyes === "mad";
         poly(
           P(mad ? [-11, -6, -3, -3, -3, -1, -11, -4] : [-11, -5, -3, -5, -3, -3, -11, -3]),
@@ -5571,26 +5591,30 @@
           rect(X(ex + px), Y(-1), S(2), S(2), TY.pupil);
           if (dazed) rect(X(ex), Y(-2), S(6), S(1.5), TY.s1);
         }
-        // a broad nose
-        poly(P([-2, 0, 2, 0, 4, 6, -4, 6]), TY.s1);
-        rect(X(-1), Y(1), S(1), S(3), TY.s3);
-        rect(X(-4), Y(6), S(3), S(1), TY.s0);
-        rect(X(1), Y(6), S(3), S(1), TY.s0);
+        // a broad, flat nose
+        poly(P([-2, -1, 2, -1, 5, 6, -5, 6]), TY.s1);
+        rect(X(-1), Y(0), S(1), S(4), TY.s3);
+        rect(X(-5), Y(6), S(3), S(1), TY.s0);
+        rect(X(2), Y(6), S(3), S(1), TY.s0);
+        // the mouth: even at rest his lips part on that gap
         const o = p.open;
         if (p.mouth === "open") {
           ell(X(0), Y(11), S(4 + 2 * o), S(1 + 4 * o), TY.s0);
           ell(X(0), Y(11), S(3 + 2 * o), S(0.6 + 3.4 * o), TY.mouth);
-          rect(X(-3 - o), Y(11 - 3.4 * o), S(6 + 2 * o), S(1 + 0.6 * o), TY.teeth);
+          teeth(11 - 3.4 * o, 6 + 2 * o, 1 + 0.6 * o);
           if (o > 0.6)
             rect(X(-2 - o), Y(10 + 3 * o), S(4 + 2 * o), S(1 + 0.4 * o), TY.teeth);
         } else if (p.mouth === "grit") {
           rect(X(-5), Y(9), S(10), S(3), TY.s0);
-          rect(X(-4), Y(9.5), S(8), S(2), TY.teeth);
-        } else if (p.mouth === "smirk")
-          poly(P([-5, 11, 5, 9, 5, 10, -5, 12]), TY.s0);
-        else {
-          rect(X(-5), Y(10), S(10), S(1), TY.s0);
-          rect(X(-4), Y(11), S(8), S(1), TY.s1);
+          teeth(9.5, 8, 2);
+        } else if (p.mouth === "smirk") {
+          poly(P([-5, 11, 5, 9, 5, 11, -5, 12]), TY.s0);
+          teeth(10, 4, 1);
+        } else {
+          rect(X(-4.5), Y(8.5), S(9), S(1), TY.s1);
+          rect(X(-5), Y(9.5), S(10), S(2.5), TY.s0);
+          teeth(9.5, 6, 1.5);
+          rect(X(-4), Y(12), S(8), S(1), TY.s3);
         }
       }
       function drawTysonBody(p) {
@@ -5694,15 +5718,15 @@
           for (const s of [-1, 1])
             ell(cx + s * 7, 117 + i * 9 + by, 5, 3, s < 0 ? TY.s3 : TY.s2);
         rect(cx, 110 + by, 1, 34, TY.s1);
-        // traps, neck, shoulders
+        // big traps and that neck, near as wide as his head
         poly(
-          [cx - 13, 68 + by, cx + 13, 68 + by, cx + 34, 86 + by, cx - 34, 86 + by],
+          [cx - 16, 64 + by, cx + 16, 64 + by, cx + 37, 86 + by, cx - 37, 86 + by],
           TY.s2,
         );
         // the head, unless it's lunging in for a bite (then it's drawn last, in front of everything)
         const close = p.hs > 1.3;
-        limb(cx, 84 + by, 12, hx, hy + 10 * p.hs, 11 * Math.min(p.hs, 2), TY.s2);
-        if (!close) rect(hx + 3, hy + 14, 8, 10, TY.s1);
+        limb(cx, 84 + by, 15, hx, hy + 10 * p.hs, 14 * Math.min(p.hs, 2), TY.s2);
+        if (!close) rect(hx + 4, hy + 13, 10, 11, TY.s1);
         for (const s of [-1, 1]) {
           circ(cx + s * 40, 90 + by, 11, s < 0 ? TY.s2 : TY.s1);
           if (s < 0) circ(cx - 42, 86 + by, 6, TY.s3);
@@ -7542,8 +7566,10 @@
           combos: TYSON_COMBOS,
           comboChance: 0.45,
           rageCombo: tysonRageCombo,
-          feint: 0.2,
-          feintRage: 0.3,
+          rageChain: 0.8, // his rage combo's tells and pauses run at this fraction of a normal combo's
+          parryFx: 0.35, // a parry only shakes and flashes the screen this much, so it can't be mistaken for a hit
+          feint: 0.4,
+          feintRage: 0.55,
           feintInto: {
             jab: "uppercut",
             gut: "haymaker",
@@ -7774,7 +7800,7 @@
             w: 10,
           });
           shake(8, 0.5);
-          flashScreen("#ffffff", 0.6, 0.15);
+          flashScreen("#ff2030", 0.55, 0.25);
           hitstop(0.12);
         },
         uppercut: () => {
@@ -7789,7 +7815,7 @@
             w: 10,
           });
           shake(8, 0.5);
-          flashScreen("#ffffff", 0.6, 0.15);
+          flashScreen("#ff2030", 0.55, 0.25);
           hitstop(0.12);
         },
         bite: (d) => {
@@ -7940,6 +7966,8 @@
         let w = o.windup || (o.chained ? L.chainWindup[key] : m.windup);
         if (Array.isArray(w)) w = rand(w[0], w[1]);
         if (d.raged && !o.chained) w *= CFG.rageSpeed;
+        if (o.chained && !o.windup && d.chain === "rage" && L.rageChain)
+          w *= L.rageChain;
         // delayed swings: the blade starts down at holdAt, then hangs for a random beat before the real strike
         d.holdAt = null;
         if (m.hold) {
@@ -8175,6 +8203,8 @@
           d.flinchDir = at[0] < 128 ? 1 : -1;
           if (finale) startCinematic(at);
           else {
+            // q < 1 tones the screen down (no impact frame or slow-mo either), so a parry reads apart from a hit
+            const q = L.parryFx ?? 1;
             game.star = {
               t: 0,
               dur: 0.1 + 0.12 * k,
@@ -8182,11 +8212,11 @@
               y: at[1],
               s: 12 + 20 * k,
             };
-            hitstop(0.09 + 0.13 * k);
-            shake(3 + 5 * k, 0.18 + 0.25 * k);
-            flashScreen("#ffffff", 0.35 + 0.25 * k, 0.08 + 0.06 * k);
-            punch(0.025 + 0.05 * k, at);
-            if (k >= 1) {
+            hitstop((0.09 + 0.13 * k) * (0.5 + 0.5 * q));
+            shake((3 + 5 * k) * q, 0.18 + 0.25 * k);
+            flashScreen("#ffffff", (0.35 + 0.25 * k) * q, 0.08 + 0.06 * k);
+            punch((0.025 + 0.05 * k) * q, at);
+            if (k >= 1 && q >= 1) {
               game.impactT = 0.07;
               game.slowT = game.slowDur = 0.35;
             }
@@ -8204,7 +8234,9 @@
           if (d.queue.length) {
             d.state = "deflect";
             d.t = 0;
-            d.deflectDur = L.deflect[d.moveKey];
+            d.deflectDur =
+              L.deflect[d.moveKey] *
+              (d.chain === "rage" && L.rageChain ? L.rageChain : 1);
             return;
           }
           d.state = "stunned";
