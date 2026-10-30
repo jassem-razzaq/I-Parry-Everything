@@ -300,7 +300,8 @@
           grid-template-columns: repeat(2, auto);
         }
       }
-      /* the victory screen after the last duel: every foe you beat, with your best rank against each */
+      /* the rosters: the title screen's level select and the victory screen after the last duel. A card per foe
+         with your best rank and time against them, and a gold medal if you beat them without taking a hit */
       #victoryPanel {
         justify-items: center;
         text-align: center;
@@ -320,15 +321,40 @@
       }
       .roster li {
         display: grid;
+        animation: lineup 0.4s steps(4) both;
+      }
+      .roster .card {
+        position: relative;
+        display: grid;
         justify-items: center;
         align-content: start;
         gap: 6px;
         padding: 10px 4px 8px;
+        font: inherit;
+        color: inherit;
         background: var(--stone);
+        border: 0;
         box-shadow:
           inset 0 -4px 0 var(--shade),
           inset 0 0 0 2px var(--stone-hi);
-        animation: medal 0.4s steps(4) both;
+      }
+      button.card {
+        cursor: pointer;
+      }
+      button.card:hover:not(:disabled) {
+        box-shadow:
+          inset 0 -4px 0 var(--shade),
+          inset 0 0 0 2px var(--ember);
+      }
+      button.card:active:not(:disabled) {
+        transform: translateY(2px);
+      }
+      button.card:disabled {
+        cursor: default;
+      }
+      button.card:focus-visible {
+        outline: 2px solid var(--bone);
+        outline-offset: 2px;
       }
       .roster li:nth-child(2) {
         animation-delay: 0.15s;
@@ -339,7 +365,7 @@
       .roster li:nth-child(4) {
         animation-delay: 0.45s;
       }
-      @keyframes medal {
+      @keyframes lineup {
         from {
           transform: translateY(10px);
         }
@@ -349,11 +375,21 @@
           animation: none;
         }
       }
-      .roster canvas {
-        width: 48px;
-        height: 48px;
+      .roster .pic,
+      .medal {
         image-rendering: crisp-edges;
         image-rendering: pixelated;
+      }
+      .roster .pic {
+        width: 48px;
+        height: 48px;
+      }
+      .roster .medal {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        width: 24px;
+        height: 28px;
       }
       .roster .who {
         font-family: var(--font-ui);
@@ -370,10 +406,64 @@
         line-height: 1;
         color: var(--ember);
       }
+      .roster .time {
+        min-height: 1em;
+        font-size: 17px;
+        line-height: 1;
+        color: var(--bone-dim);
+        font-variant-numeric: tabular-nums;
+      }
       @media (max-width: 420px) {
         .roster {
           grid-template-columns: repeat(2, 1fr);
         }
+      }
+      /* the title screen's level select: smaller cards, four across even on a phone */
+      .roster.select {
+        max-width: 26rem;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+      }
+      .roster.select li {
+        animation: none;
+      }
+      .roster.select .card {
+        gap: 4px;
+        padding: 7px 2px 6px;
+      }
+      .roster.select .pic {
+        width: 40px;
+        height: 40px;
+      }
+      .roster.select .medal {
+        top: 2px;
+        right: 2px;
+        width: 18px;
+        height: 21px;
+      }
+      .roster.select .who {
+        font-size: 9px;
+      }
+      .roster.select .rk {
+        font-size: 17px;
+      }
+      .roster.select .time {
+        font-size: 15px;
+      }
+      .medal-note {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0;
+        font-family: var(--font-ui);
+        font-size: 13px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: #f0c040;
+      }
+      .medal-note .medal {
+        width: 24px;
+        height: 28px;
       }
 
       #controls {
@@ -760,17 +850,13 @@
       <div id="overlay">
         <div class="panel" id="titlePanel">
           <h1>I Parry Everything</h1>
+          <ol
+            class="roster select"
+            id="titleRoster"
+            aria-label="Choose a duel"
+          ></ol>
           <div class="title-actions">
             <button class="cta" id="startBtn" type="button">Fight</button>
-            <button class="cta ghost" id="lvl2Btn" type="button" hidden>
-              Level 2
-            </button>
-            <button class="cta ghost" id="lvl3Btn" type="button" hidden>
-              Level 3
-            </button>
-            <button class="cta ghost" id="lvl4Btn" type="button" hidden>
-              Level 4
-            </button>
             <button class="cta ghost" id="weaponBtn" type="button" hidden>
               Weapon: Sword
             </button>
@@ -862,6 +948,10 @@
               <dd id="stRank">S</dd>
             </div>
           </dl>
+          <p class="medal-note" id="endMedal" hidden>
+            Gold medal: no damage taken
+          </p>
+          <p class="medal-note" id="endUnlock" hidden></p>
           <div class="title-actions">
             <button class="cta" id="againBtn" type="button">Fight again</button>
             <button class="cta ghost" id="titleBtn" type="button" hidden>
@@ -878,6 +968,7 @@
             id="roster"
             aria-label="Your best rank against each foe"
           ></ol>
+          <p class="medal-note" id="vicUnlock" hidden></p>
           <div class="title-actions">
             <button class="cta" id="vicAgainBtn" type="button">
               Play again
@@ -6581,6 +6672,129 @@
           );
         }
       }
+      // the golden Deagle from behind and above: the back of the slide toward you, its top and left side running off
+      // toward the boss, your gauntlet round the grip. t is the time since the shot (-1: none): the muzzle kicks up,
+      // the slide slams back, and a flash and a tracer go out to where it landed
+      function drawDeagle(ox, oy, t) {
+        const kick =
+            t < 0 ? 0 : t < 0.04 ? t / 0.04 : 1 - smooth(0.04, 0.34, t),
+          rack = t < 0 ? 0 : t < 0.03 ? t / 0.03 : 1 - smooth(0.03, 0.12, t),
+          // a point on the gun at depth s (1 at the back, smaller toward the muzzle), as seen from your eye
+          P = (x, y, s, slide = rack) => {
+            const q = s * (1 + 0.05 * slide);
+            return [
+              128 + (x - 128) * q + ox + 3 * kick,
+              96 + (y - 96) * q + oy - 9 * kick - (1 - s) * 18 * kick,
+            ];
+          },
+          quad = (pts, c) => poly(pts.flat(), c),
+          F = P(178, 162, 0.44, 0);
+        if (t >= 0 && t < 0.05) {
+          const [sx, sy] = player.shotAt || [128, 112];
+          limb(F[0], F[1], 1.5, sx, sy, 0.5, "#ffd84a");
+          line(F[0], F[1], sx, sy, "#fff8d0");
+        }
+        // forearm and grip
+        limb(
+          196 + ox + 3 * kick,
+          192 + oy - 9 * kick,
+          11,
+          240,
+          244,
+          18,
+          "#262a3a",
+        );
+        quad(
+          [
+            P(174, 166, 1, 0),
+            P(196, 166, 1, 0),
+            P(204, 202, 1, 0),
+            P(184, 206, 1, 0),
+          ],
+          "#1e1a20",
+        );
+        for (let y = 170; y < 200; y += 4)
+          for (
+            let x = 178 + (y - 166) * 0.25;
+            x < 196 + (y - 166) * 0.2;
+            x += 4
+          ) {
+            const [gx, gy] = P(x, y, 1, 0);
+            rect(gx, gy, 1, 1, "#3a3440");
+          }
+        // trigger guard
+        const g0 = P(172, 166, 1, 0),
+          g1 = P(164, 176, 1, 0),
+          g2 = P(177, 180, 1, 0);
+        limb(g0[0], g0[1], 1.2, g1[0], g1[1], 1.2, "#8a5a10");
+        limb(g1[0], g1[1], 1.2, g2[0], g2[1], 1.2, "#8a5a10");
+        // the slide: left side, top, then the back toward you
+        const tl = P(172, 150, 1),
+          tr = P(198, 150, 1),
+          bl = P(172, 166, 1),
+          br = P(198, 166, 1),
+          ftl = P(172, 150, 0.55),
+          ftr = P(198, 150, 0.55),
+          fbl = P(172, 166, 0.55);
+        quad([tl, ftl, fbl, bl], "#c8901c");
+        quad([tl, tr, ftr, ftl], "#f0c040");
+        line(...P(172, 161, 1), ...P(172, 161, 0.55), "#8a5a10");
+        for (const s of [0.97, 0.94, 0.91, 0.88])
+          line(...P(172, 152, s), ...P(172, 159, s), "#8a5a10");
+        line(...tl, ...ftl, "#ffe080");
+        line(...P(185, 150, 1), ...P(185, 150, 0.56), "#fff0a0");
+        const sight = P(185, 150, 0.57);
+        rect(sight[0] - 1, sight[1] - 2, 2, 2, "#8a5a10");
+        quad([tl, tr, br, bl], "#8a5a10");
+        const [rx, ry] = P(173, 151, 1);
+        rect(rx, ry, 24 * (1 + 0.05 * rack), 13, "#a8781c");
+        for (const x of [174, 191]) {
+          const [sx, sy] = P(x, 147, 1);
+          rect(sx, sy, 5, 3, "#5a3a0c");
+        }
+        const [hx, hy] = P(182, 154, 1);
+        rect(hx, hy, 6, 6, "#3a2408");
+        rect(hx + 1, hy + 1, 2, 2, "#a8781c");
+        // your gauntlet: the back of the hand, fingers round the front of the grip, thumb along the frame
+        const H = (x, y) => [x + ox + 3 * kick, y + oy - 9 * kick];
+        limb(...H(181, 173), 4, ...H(168, 166), 3.5, "#262a3a");
+        limb(...H(181, 172), 3, ...H(169, 166), 2.5, "#3a3f56");
+        rect(...H(171, 165), 3, 1, "#6a7290");
+        for (const [x, y] of [
+          [176, 179],
+          [176, 185],
+          [178, 191],
+        ]) {
+          ell(...H(x, y), 5, 3.5, "#262a3a");
+          ell(...H(x, y - 0.5), 4, 2.5, "#3a3f56");
+        }
+        ell(...H(189, 183), 13, 11, "#262a3a");
+        ell(...H(189, 182), 12, 10, "#3a3f56");
+        ell(...H(184, 176), 4, 2.5, "#4a5070");
+        ell(...H(192, 175), 4, 2.5, "#4a5070");
+        rect(...H(182, 175), 3, 1, "#aab4cc");
+        rect(...H(190, 174), 3, 1, "#6a7290");
+        // the flash
+        if (t >= 0 && t < 0.06) {
+          const big = t < 0.03 ? 1 : 0.6;
+          for (let i = 0; i < 8; i++) {
+            const a = (i / 8) * TAU + 0.4,
+              len = (i % 2 ? 10 : 17) * big;
+            limb(
+              F[0],
+              F[1],
+              2.5 * big,
+              F[0] + Math.cos(a) * len,
+              F[1] + Math.sin(a) * len,
+              0.5,
+              "#ffd84a",
+            );
+          }
+          circ(F[0], F[1], 7 * big, "#ffd84a");
+          circ(F[0], F[1], 4 * big, "#fff8d0");
+          circ(F[0], F[1], 2, "#ffffff");
+        }
+      }
       function drawPlayer() {
         if (usingGloves()) return drawBoxer();
         const P = player,
@@ -6592,6 +6806,22 @@
           game.mode === "loseAnim" || game.mode === "lose"
             ? Math.min(1, game.modeT * 1.2) * 60
             : 0;
+        if (usingDeagle()) {
+          // a shot that hit starts the swing clock; one he blocked, the recoil clock
+          const t = Math.min(
+            P.swingT >= 0 ? P.swingT : 9,
+            P.recoilT >= 0 ? P.recoilT : 9,
+          );
+          drawDeagle(0, bob + drop + fall, t < 0.4 ? t : -1);
+          const sh = shieldPose();
+          drawShield(
+            sh.x,
+            sh.y + bob * 0.8 + drop + fall,
+            sh.r,
+            P.shieldFlash > 0,
+          );
+          return;
+        }
         const sp = swordPose();
         if (P.swingT >= 0 && P.swingT < SWING * 0.7) {
           const s = P.swingT / SWING,
@@ -7668,6 +7898,21 @@
           tone(196, 147, 0.25, "square", 0.1);
           tone(185, 139, 0.25, "square", 0.06, 0.02);
         },
+        // the Deagle: a sharp crack over a heavy boom, the hall ringing after it, then the casing on the floor
+        bang() {
+          hiss(0.05, 0.55, 6000, 1500, "highpass");
+          hiss(0.4, 0.5, 1800, 120);
+          tone(150, 38, 0.32, "sine", 0.5);
+          tone(90, 30, 0.2, "triangle", 0.3);
+          hiss(0.9, 0.06, 900, 300, "bandpass", 0.08);
+          [0.42, 0.55].forEach((d, i) =>
+            tone(3800 - i * 500, 3400 - i * 500, 0.04, "triangle", 0.05, d),
+          );
+        },
+        ricochet() {
+          tone(2600, 900, 0.32, "sine", 0.12, 0.03);
+          hiss(0.06, 0.18, 4000, 0, "bandpass", 0.03, false, 3);
+        },
       };
       // your gloves sound like leather, not a sword and shield (Mike's level, or anywhere once you've won them)
       const GLOVE_SOUNDS = {
@@ -7678,10 +7923,17 @@
         block: () => sfx.gloveBlock(),
         clash: () => sfx.gloveClash(),
       };
+      // the Deagle: a gunshot for a swing, a ricochet off his guard
+      const DEAGLE_SOUNDS = {
+        swing: () => sfx.bang(),
+        block: () => sfx.ricochet(),
+        clash: () => sfx.ricochet(),
+      };
       // a level can swap in its own sounds for your actions
       const play = (k, ...a) =>
         (
           (usingGloves() && GLOVE_SOUNDS[k]) ||
+          (usingDeagle() && DEAGLE_SOUNDS[k]) ||
           (L.sounds && L.sounds[k]) ||
           sfx[k]
         )(...a);
@@ -7975,12 +8227,37 @@
       );
       // beating Mike wins you his gloves (and the Dempsey roll) for every other duel; #gloves unlocks them for testing
       let glovesWon =
-          store.get("dragonDuelGloves") === "1" || location.hash === "#gloves",
-        weapon =
-          glovesWon && store.get("dragonDuelWeapon") === "gloves"
-            ? "gloves"
-            : "sword";
-      const usingGloves = () => !!L.gloves || weapon === "gloves";
+        store.get("dragonDuelGloves") === "1" || location.hash === "#gloves";
+      // a gold medal on every duel (no secret level) wins you the golden Deagle; #deagle unlocks it for testing
+      function deagleWon() {
+        return (
+          location.hash === "#deagle" ||
+          LEVELS.every(
+            (l, i) => l.secret || store.get("dragonDuelGold" + i) === "1",
+          )
+        );
+      }
+      // the weapons you've won, in the order the title screen's toggle cycles through them
+      const weapons = () =>
+          ["sword", glovesWon && "gloves", deagleWon() && "deagle"].filter(
+            Boolean,
+          ),
+        WEAPON_NAMES = { gloves: "Mike's gloves", deagle: "the golden Deagle" };
+      let weapon = weapons().includes(store.get("dragonDuelWeapon"))
+        ? store.get("dragonDuelWeapon")
+        : "sword";
+      const usingGloves = () => !!L.gloves || weapon === "gloves",
+        usingDeagle = () => !L.gloves && weapon === "deagle";
+      // the Deagle fires slower than a sword swings, but needs no opening: a shot into one counts as `dmg` sword hits,
+      // one that catches him anywhere else as `graze` (the knight's raised shield still stops it).
+      // muzzle and port are where its smoke and casing come from (see drawDeagle)
+      const DEAGLE = {
+        dmg: 2,
+        graze: 1,
+        cooldown: 0.45,
+        muzzle: [150, 125],
+        port: [196, 150],
+      };
 
       const HIT_FX = {
         claw: (d) => {
@@ -8794,13 +9071,42 @@
           play("whiff");
         }
       }
+      const shotDmg = () => (usingDeagle() ? DEAGLE.dmg : 1);
+      // the Deagle goes off: a flash of light, the casing flipping out of the port, smoke curling off the muzzle
+      function deagleFire() {
+        flashScreen("#fff0c0", 0.14, 0.05);
+        shake(2, 0.1);
+        burst(DEAGLE.port[0], DEAGLE.port[1], 1, {
+          ang: -1.05,
+          spread: 0.4,
+          speed: [90, 130],
+          life: [0.5, 0.7],
+          g: 520,
+          cols: ["#e0b040"],
+          size: [2, 2],
+          layer: 2,
+        });
+        burst(DEAGLE.muzzle[0], DEAGLE.muzzle[1], 5, {
+          ang: -Math.PI / 2,
+          spread: 1.2,
+          speed: [8, 30],
+          life: [0.4, 0.9],
+          g: -20,
+          drag: 1.5,
+          cols: ["#d8d0c8", "#a8a098", "#787068"],
+          size: [2, 4],
+          layer: 2,
+        });
+      }
       function doAttack() {
         const d = boss;
         player.swingT = 0;
-        player.lock = CFG.attackCooldown;
+        player.lock = usingDeagle() ? DEAGLE.cooldown : CFG.attackCooldown;
+        player.shotAt = [150, 120];
         play("swing");
+        if (usingDeagle()) deagleFire();
         if (d.state === "stunned") {
-          d.hits++;
+          d.hits += shotDmg();
           stats.hits++;
           d.flash = 0.07;
           d.flinch = 1;
@@ -8813,6 +9119,7 @@
             lastPose && lastPose.weak > 0
               ? lastPose.weakAt
               : [rand(116, 150), rand(104, 132)];
+          player.shotAt = [sx, sy];
           burst(sx, sy, 14, {
             speed: [30, 120],
             life: [0.15, 0.35],
@@ -8837,11 +9144,14 @@
             sfx.guardUp();
           }
         } else if (d.state === "open" || d.state === "guard") {
+          player.shotAt = [136, 106];
           parriedByBoss(d.state === "open");
         } else if (d.state === "windup" && d.move.channel) {
+          if (lastPose && lastPose.weakAt) player.shotAt = lastPose.weakAt;
           if (++d.breaks < d.needs) chip();
           else interrupt();
-        } else {
+        } else if (usingDeagle()) graze();
+        else {
           Object.assign(player, {
             lock: CFG.blockedLock,
             recoilT: 0,
@@ -8862,6 +9172,29 @@
           }
         }
       }
+      // a Deagle shot that catches him mid-attack (or just standing there): it stings, but he carries on
+      function graze() {
+        const d = boss,
+          [hx, hy] = lastPose && lastPose.head ? lastPose.head : [128, 70],
+          x = hx + rand(-14, 14),
+          y = hy + rand(28, 56);
+        d.hits += DEAGLE.graze;
+        stats.hits++;
+        d.flash = 0.05;
+        d.flinch = Math.max(d.flinch, 0.5);
+        d.flinchDir = x < hx ? 1 : -1;
+        player.shotAt = [x, y];
+        hitstop(0.03);
+        play("hit");
+        burst(x, y, 10, {
+          speed: [30, 110],
+          life: [0.12, 0.3],
+          g: 120,
+          cols: ["#ffffff", "#ffe0a0", L.sparks],
+          size: [1, 2],
+        });
+        if (d.hits >= bossHp()) bossDies();
+      }
       function bossDies() {
         const d = boss;
         d.state = "dying";
@@ -8875,7 +9208,7 @@
       function chip() {
         const d = boss,
           [x, y] = lastPose && lastPose.weakAt ? lastPose.weakAt : [128, 104];
-        d.hits++;
+        d.hits += shotDmg();
         stats.hits++;
         d.flash = 0.06;
         d.flinch = 1;
@@ -8900,7 +9233,7 @@
         const d = boss,
           at = lastPose && lastPose.weakAt ? lastPose.weakAt : [128, 104],
           finale = d.chain === "rage" && d.queue.length === 0;
-        d.hits++;
+        d.hits += shotDmg();
         stats.hits++;
         silence(d.channelSnd);
         d.channelSnd = null;
@@ -10092,26 +10425,124 @@
           for (const x of [9, 14]) rect(x, y, 1, 1, "#05060a");
         rect(5, 19, 14, 3, "#1b1f2e");
       }
-      const roster = LEVELS.filter((l) => !l.secret).map((l) => {
-        const li = $("roster").appendChild(document.createElement("li")),
-          c = li.appendChild(document.createElement("canvas"));
-        c.width = c.height = 24;
+      // beat a foe without taking a hit and a gold medal hangs on their portrait
+      function medalIcon() {
+        poly([1, 0, 5, 0, 7, 6, 4, 6], "#c8202a");
+        poly([7, 0, 11, 0, 8, 6, 5, 6], "#2a4ab0");
+        circ(6, 9, 4, "#a8781c");
+        circ(6, 9, 3, "#f0c040");
+        rect(4, 7, 1, 2, "#fff0a0");
+        rect(6, 8, 1, 3, "#c8901c");
+        rect(5, 9, 3, 1, "#c8901c");
+      }
+      // dark: a silhouette, for a foe you haven't reached yet
+      function drawIcon(c, fn, dark) {
         g = c.getContext("2d");
-        l.icon();
+        g.clearRect(0, 0, c.width, c.height);
+        fn();
+        if (dark) {
+          g.globalCompositeOperation = "source-atop";
+          rect(0, 0, c.width, c.height, "#3b3058");
+          g.globalCompositeOperation = "source-over";
+        }
         g = ctx;
-        li.insertAdjacentHTML(
-          "beforeend",
-          `<span class="who">${l.name}</span><span class="rk">-</span>`,
+      }
+      function iconCanvas(w, h, cls) {
+        const c = document.createElement("canvas");
+        c.width = w;
+        c.height = h;
+        c.className = cls;
+        return c;
+      }
+      const clock = (t) =>
+        `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`;
+      // the same roster on the title screen, where each card starts that duel, and on the victory screen
+      const FOES = LEVELS.filter((l) => !l.secret),
+        rosters = [
+          ["roster", "div"],
+          ["titleRoster", "button"],
+        ].map(([id, tag]) =>
+          FOES.map((l, i) => {
+            const card = $(id)
+                .appendChild(document.createElement("li"))
+                .appendChild(document.createElement(tag)),
+              span = (cls) =>
+                Object.assign(
+                  card.appendChild(document.createElement("span")),
+                  {
+                    className: cls,
+                  },
+                ),
+              pic = card.appendChild(iconCanvas(24, 24, "pic")),
+              medal = card.appendChild(iconCanvas(12, 14, "medal"));
+            card.className = "card";
+            drawIcon(medal, medalIcon);
+            if (tag === "button") {
+              card.type = "button";
+              card.addEventListener("click", () => startFight(i));
+            } else {
+              medal.setAttribute("role", "img");
+              medal.setAttribute("aria-label", "Gold medal");
+            }
+            return {
+              card,
+              pic,
+              medal,
+              who: span("who"),
+              rk: span("rk"),
+              time: span("time"),
+              dark: null,
+            };
+          }),
         );
-        return li.lastChild;
-      });
+      // foes you haven't reached are silhouettes, and their cards can't be picked yet
+      function syncRosters() {
+        for (const r of rosters)
+          r.forEach((e, i) => {
+            const best = store.get("dragonDuelRank" + i),
+              secs = store.get("dragonDuelTime" + i),
+              gold = store.get("dragonDuelGold" + i) === "1",
+              open = !!best || i < unlocked,
+              name = open ? FOES[i].name : "???";
+            if (e.dark !== !open) {
+              e.dark = !open;
+              drawIcon(e.pic, FOES[i].icon, !open);
+            }
+            e.who.textContent = name;
+            e.rk.textContent = best || "-";
+            e.time.textContent = secs ? clock(+secs) : "";
+            e.medal.hidden = !gold;
+            if (e.card.tagName !== "BUTTON") return;
+            e.card.disabled = !open;
+            e.card.setAttribute(
+              "aria-label",
+              `Level ${i + 1}: ` +
+                (open
+                  ? [
+                      name,
+                      best ? "best rank " + best : "not beaten yet",
+                      secs && "best time " + clock(+secs),
+                      gold && "gold medal",
+                    ]
+                      .filter(Boolean)
+                      .join(", ")
+                  : "locked"),
+            );
+          });
+      }
+      const endMedal = $("endMedal");
+      drawIcon(
+        endMedal.insertBefore(iconCanvas(12, 14, "medal"), endMedal.firstChild),
+        medalIcon,
+      );
       let endAction = () => startFight(0);
       function endScreen(won) {
         game.mode = won ? "win" : "lose";
         game.modeT = 0;
         const t = R(game.fightTime),
           next =
-            won && levelIdx + 1 < LEVELS.length && !LEVELS[levelIdx + 1].secret;
+            won && levelIdx + 1 < LEVELS.length && !LEVELS[levelIdx + 1].secret,
+          had = weapons();
         if (next) {
           unlocked = Math.max(unlocked, levelIdx + 2);
           store.set("dragonDuelUnlocked", String(unlocked));
@@ -10122,12 +10553,10 @@
           store.set("dragonDuelGloves", "1");
           showLevelButtons();
         }
-        $("titleBtn").hidden = !glovesWon;
         $("endEyebrow").textContent = won ? L.winText : L.loseText;
         $("endTitle").textContent = won ? "Victory" : "You fell";
         $("endTitle").className = won ? "" : "lose";
-        $("stTime").textContent =
-          `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`;
+        $("stTime").textContent = clock(t);
         $("stParries").textContent = stats.parries;
         $("stTaken").textContent = stats.taken;
         const rank =
@@ -10145,14 +10574,24 @@
             best = store.get(k);
           if (!best || RANKS.indexOf(rank) < RANKS.indexOf(best))
             store.set(k, rank);
+          const bestT = Number(store.get("dragonDuelTime" + levelIdx));
+          if (!bestT || t < bestT)
+            store.set("dragonDuelTime" + levelIdx, String(t));
+          if (!stats.taken) store.set("dragonDuelGold" + levelIdx, "1");
+          showLevelButtons();
         }
+        endMedal.hidden = !(won && !L.secret && !stats.taken);
+        // a weapon won in this duel (Mike's gloves, or the Deagle for the last gold medal); Title gets you to the toggle
+        const gained = weapons().find((w) => !had.includes(w)),
+          note = gained && `New weapon: ${WEAPON_NAMES[gained]}`;
+        for (const id of ["endUnlock", "vicUnlock"]) {
+          $(id).hidden = !note;
+          $(id).textContent = note || "";
+        }
+        $("titleBtn").hidden = weapons().length < 2;
         // the last duel won: the victory screen instead, then back to the start
         if (won && levelIdx === LAST) {
           $("vicEyebrow").textContent = L.winText;
-          roster.forEach(
-            (el, i) =>
-              (el.textContent = store.get("dragonDuelRank" + i) || "-"),
-          );
           endAction = () => startFight(0);
           showOverlay("victory");
           sfx.victory();
@@ -10198,6 +10637,13 @@
       addEventListener("keydown", (e) => {
         if (e.ctrlKey || e.metaKey || e.altKey) return;
         const k = e.code;
+        // on the title screen, Enter or Space presses whichever button has focus (a duel's card, say)
+        if (
+          game.mode === "title" &&
+          (k === "Enter" || k === "Space") &&
+          document.activeElement.closest("#titlePanel button")
+        )
+          return;
         const ours =
           PARRY_KEYS.has(k) ||
           ATTACK_KEYS.has(k) ||
@@ -10275,21 +10721,19 @@
         btnRoll.classList.toggle("ready", ready);
         btnRoll.setAttribute("aria-disabled", String(!ready));
       }
-      const lvl2Btn = $("lvl2Btn"),
-        lvl3Btn = $("lvl3Btn"),
-        lvl4Btn = $("lvl4Btn"),
-        weaponBtn = $("weaponBtn");
+      const weaponBtn = $("weaponBtn");
+      // the title screen's level select (the roster cards) and weapon toggle
       function showLevelButtons() {
-        lvl2Btn.hidden = unlocked < 2;
-        lvl3Btn.hidden = unlocked < 3;
-        lvl4Btn.hidden = unlocked < 4;
-        weaponBtn.hidden = !glovesWon;
+        weaponBtn.hidden = weapons().length < 2;
         weaponBtn.textContent =
-          "Weapon: " + (weapon === "gloves" ? "Gloves" : "Sword");
+          "Weapon: " +
+          { sword: "Sword", gloves: "Gloves", deagle: "Deagle" }[weapon];
+        syncRosters();
       }
       showLevelButtons();
       weaponBtn.addEventListener("click", () => {
-        weapon = weapon === "gloves" ? "sword" : "gloves";
+        const w = weapons();
+        weapon = w[(w.indexOf(weapon) + 1) % w.length];
         store.set("dragonDuelWeapon", weapon);
         showLevelButtons();
       });
@@ -10297,9 +10741,6 @@
       $("vicTitleBtn").addEventListener("click", () => toTitle());
       $("vicAgainBtn").addEventListener("click", () => endAction());
       $("startBtn").addEventListener("click", () => startFight(0));
-      lvl2Btn.addEventListener("click", () => startFight(1));
-      lvl3Btn.addEventListener("click", () => startFight(2));
-      lvl4Btn.addEventListener("click", () => startFight(3));
       $("againBtn").addEventListener("click", () => endAction());
       muteBtn.addEventListener("click", () => {
         audioOn();
