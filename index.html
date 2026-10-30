@@ -95,6 +95,40 @@
       #barBot {
         bottom: 0;
       }
+      /* the Dempsey roll's title card, slid across by the render loop; sized in canvas pixels (--px) */
+      #ultCard {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 50%;
+        margin: 0;
+        font-family: var(--font-ui);
+        font-weight: 700;
+        font-size: calc(var(--px, 2px) * 17);
+        line-height: 1;
+        letter-spacing: 0.04em;
+        text-align: center;
+        text-transform: uppercase;
+        white-space: nowrap;
+        color: var(--ember);
+        -webkit-text-stroke: calc(var(--px, 2px) * 1) #000;
+        paint-order: stroke fill;
+        text-shadow: calc(var(--px, 2px) * 2) calc(var(--px, 2px) * 2) 0
+          var(--ember-deep);
+        opacity: 0;
+        pointer-events: none;
+      }
+      /* the roll's reaction cam: a little TV inset over the bottom-right letterbox, drawn in canvas pixels */
+      #reactCam {
+        position: absolute;
+        right: calc(var(--px, 2px) * 6);
+        bottom: calc(var(--px, 2px) * 6);
+        width: calc(var(--px, 2px) * 60);
+        height: calc(var(--px, 2px) * 46);
+        image-rendering: crisp-edges;
+        image-rendering: pixelated;
+        pointer-events: none;
+      }
       #screen {
         position: absolute;
         inset: 0;
@@ -266,6 +300,81 @@
           grid-template-columns: repeat(2, auto);
         }
       }
+      /* the victory screen after the last duel: every foe you beat, with your best rank against each */
+      #victoryPanel {
+        justify-items: center;
+        text-align: center;
+        gap: 18px;
+      }
+      h2.champ {
+        font-size: clamp(46px, 11vw, 84px);
+      }
+      .roster {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+      }
+      .roster li {
+        display: grid;
+        justify-items: center;
+        align-content: start;
+        gap: 6px;
+        padding: 10px 4px 8px;
+        background: var(--stone);
+        box-shadow:
+          inset 0 -4px 0 var(--shade),
+          inset 0 0 0 2px var(--stone-hi);
+        animation: medal 0.4s steps(4) both;
+      }
+      .roster li:nth-child(2) {
+        animation-delay: 0.15s;
+      }
+      .roster li:nth-child(3) {
+        animation-delay: 0.3s;
+      }
+      .roster li:nth-child(4) {
+        animation-delay: 0.45s;
+      }
+      @keyframes medal {
+        from {
+          transform: translateY(10px);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .roster li {
+          animation: none;
+        }
+      }
+      .roster canvas {
+        width: 48px;
+        height: 48px;
+        image-rendering: crisp-edges;
+        image-rendering: pixelated;
+      }
+      .roster .who {
+        font-family: var(--font-ui);
+        font-size: 11px;
+        line-height: 1.2;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--bone-dim);
+      }
+      .roster .rk {
+        font-family: var(--font-ui);
+        font-weight: 700;
+        font-size: 26px;
+        line-height: 1;
+        color: var(--ember);
+      }
+      @media (max-width: 420px) {
+        .roster {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
 
       #controls {
         display: flex;
@@ -311,6 +420,45 @@
       }
       .btn.attack {
         --btn-accent: var(--ember);
+      }
+      /* the Dempsey roll ("Ultimate", so the name stays a surprise): dim while you build your parry streak
+         (a pip per parry), glowing once it's charged */
+      .btn.roll {
+        --btn-accent: var(--bone-dim);
+        flex: 0.8 1 0;
+        font-size: 13px;
+        gap: 6px;
+      }
+      .btn.roll.ready {
+        --btn-accent: var(--ember);
+        box-shadow:
+          inset 0 -5px 0 var(--shade),
+          inset 0 0 0 2px var(--ember);
+        animation: charged 0.6s steps(2) infinite;
+      }
+      @keyframes charged {
+        50% {
+          background: var(--stone-hi);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .btn.roll.ready {
+          animation: none;
+        }
+      }
+      .pips {
+        display: flex;
+        gap: 4px;
+      }
+      .pips i {
+        width: 8px;
+        height: 8px;
+        background: var(--shade);
+        box-shadow: inset 0 0 0 1px var(--stone-hi);
+      }
+      .pips i.on {
+        background: var(--ember);
+        box-shadow: none;
       }
       .btn small {
         font-family: var(--font-body);
@@ -597,6 +745,14 @@
         </div>
         <div class="lbar" id="barTop"></div>
         <div class="lbar" id="barBot"></div>
+        <p id="ultCard" aria-hidden="true">Dempsey roll</p>
+        <canvas
+          id="reactCam"
+          width="60"
+          height="46"
+          aria-hidden="true"
+          hidden
+        ></canvas>
       </div>
       <button id="muteBtn" class="mute" type="button" aria-pressed="false">
         Sound on
@@ -615,12 +771,19 @@
             <button class="cta ghost" id="lvl4Btn" type="button" hidden>
               Level 4
             </button>
+            <button class="cta ghost" id="weaponBtn" type="button" hidden>
+              Weapon: Sword
+            </button>
             <button class="cta ghost" id="codeBtn" type="button">Code</button>
           </div>
         </div>
         <div class="panel" id="codePanel" hidden>
           <p class="eyebrow">Enter a code</p>
-          <div class="code-slots" id="codeSlots" aria-label="Code entered"></div>
+          <div
+            class="code-slots"
+            id="codeSlots"
+            aria-label="Code entered"
+          ></div>
           <div class="nes" role="group" aria-label="Controller">
             <div class="dpad">
               <button type="button" data-k="U" aria-label="Up"></button>
@@ -631,7 +794,9 @@
             </div>
             <div class="nes-mid">
               <i></i><i></i>
-              <div class="nes-labels"><span>Select</span><span>Start</span></div>
+              <div class="nes-labels">
+                <span>Select</span><span>Start</span>
+              </div>
               <div class="nes-ss">
                 <button
                   class="pill"
@@ -697,13 +862,46 @@
               <dd id="stRank">S</dd>
             </div>
           </dl>
-          <button class="cta" id="againBtn" type="button">Fight again</button>
+          <div class="title-actions">
+            <button class="cta" id="againBtn" type="button">Fight again</button>
+            <button class="cta ghost" id="titleBtn" type="button" hidden>
+              Title
+            </button>
+          </div>
           <p class="fine" id="endHint">or press R</p>
+        </div>
+        <div class="panel" id="victoryPanel" hidden>
+          <p class="eyebrow" id="vicEyebrow">The black knight falls</p>
+          <h2 class="champ">You parried everything</h2>
+          <ol
+            class="roster"
+            id="roster"
+            aria-label="Your best rank against each foe"
+          ></ol>
+          <div class="title-actions">
+            <button class="cta" id="vicAgainBtn" type="button">
+              Play again
+            </button>
+            <button class="cta ghost" id="vicTitleBtn" type="button">
+              Title
+            </button>
+          </div>
+          <p class="fine">or press Enter</p>
         </div>
       </div>
     </div>
     <div id="controls">
       <button id="btnParry" class="btn parry" type="button">◄ Parry</button>
+      <button
+        id="btnRoll"
+        class="btn roll"
+        type="button"
+        hidden
+        aria-disabled="true"
+      >
+        Ultimate<span class="pips" id="rollPips" aria-hidden="true"></span
+        ><small>Space</small>
+      </button>
       <button id="btnAttack" class="btn attack" type="button">Attack ►</button>
     </div>
 
@@ -713,12 +911,12 @@
       /* ================= Tuning: tweak the fight here ================= */
       const CFG = {
         hearts: 5,
-        bossHits: 20, // sword hits to slay the boss (never shown to the player)
-        rageAt: 12, // after this many hits it roars, speeds up and opens with its combo
+        bossHits: 25, // sword hits to slay the boss (never shown to the player)
+        rageAt: 17, // after this many hits it roars, speeds up and opens with its combo (parry its last strike and it dies)
         rageSpeed: 0.85, // telegraph length multiplier while enraged
         doubleClaw: 0.4, // chance a claw is followed straight away by a second one
         rageComboChance: 0.3, // once enraged, chance an attack is the rage combo (the first one always is)
-        comboStun: 1.6, // time to hit back after parrying the combo's final strike
+        comboStun: 1.6, // how long he reels after the Dempsey roll's finisher (or a rage combo's last parry, until he falls)
         chainFollow: 0.4, // when a chained strike hits you, the next one comes after this pause
         feint: 0.3, // samurai: chance an attack is a feint
         feintRage: 0.5, //          ...once he's enraged
@@ -731,6 +929,7 @@
         whiffLock: 0.4, // parried at nothing: shield stays down this long
         blockedLock: 0.5, // swung while the boss was guarding
         hurtLock: 0.45,
+        ultStreak: 5, // gloves: parry this many attacks in a row to charge the Dempsey roll (getting hit resets it)
         idle: [0.8, 1.6], // pause between attacks, seconds
         idleRage: [0.45, 1.0],
       };
@@ -787,7 +986,7 @@
         { key: "thrust" },
         { key: "cleave" },
       ];
-      // level 3. Smite hangs mid-swing for a random beat; bash only comes when you don't take an opening, and can't be parried
+      // level 4. Smite hangs mid-swing for a random beat; bash only comes when you don't take an opening, and can't be parried
       const KNIGHT_MOVES = {
         cut: { dmg: 1, windup: 0.45, window: 0.17, stun: 1.0, follow: 0.4 },
         smite: {
@@ -833,7 +1032,7 @@
         { open: true },
         { key: "smite" },
       ];
-      // level 4. Orbs come in volleys, each at its own pitch. The curse is a channel: parrying does nothing,
+      // level 3. Orbs come in volleys, each at its own pitch. The curse is a channel: parrying does nothing,
       // you have to hit him while he chants. Doom, the giant orb, only ends his rage combo.
       const LICH_MOVES = {
         orb: {
@@ -2989,7 +3188,7 @@
         return p;
       }
 
-      /* ================= Black Knight (level 3) ================= */
+      /* ================= Black Knight (level 4) ================= */
       const N = {
         a0: "#07080d",
         a1: "#12151e",
@@ -3943,7 +4142,7 @@
         return p;
       }
 
-      /* ================= Lich (level 4) ================= */
+      /* ================= Lich (level 3) ================= */
       const Z = {
         r0: "#08060c",
         r1: "#170f21",
@@ -5524,7 +5723,12 @@
         // a tattoo stroke: a hairline at normal size, a thicker line up close
         const ink = (pts) => {
           for (let i = 0; i + 3 < pts.length; i += 2) {
-            const [x0, y0, x1, y1] = [X(pts[i]), Y(pts[i + 1]), X(pts[i + 2]), Y(pts[i + 3])];
+            const [x0, y0, x1, y1] = [
+              X(pts[i]),
+              Y(pts[i + 1]),
+              X(pts[i + 2]),
+              Y(pts[i + 3]),
+            ];
             if (s < 1.5) line(x0, y0, x1, y1, TY.ink);
             else limb(x0, y0, 0.45 * s, x1, y1, 0.45 * s, TY.ink);
           }
@@ -5572,11 +5776,19 @@
         rect(X(3), Y(-2), S(7), S(1), TY.s1);
         const mad = p.eyes === "mad";
         poly(
-          P(mad ? [-11, -6, -3, -3, -3, -1, -11, -4] : [-11, -5, -3, -5, -3, -3, -11, -3]),
+          P(
+            mad
+              ? [-11, -6, -3, -3, -3, -1, -11, -4]
+              : [-11, -5, -3, -5, -3, -3, -11, -3],
+          ),
           TY.s0,
         );
         poly(
-          P(mad ? [3, -3, 11, -6, 11, -4, 3, -1] : [3, -5, 11, -5, 11, -3, 3, -3]),
+          P(
+            mad
+              ? [3, -3, 11, -6, 11, -4, 3, -1]
+              : [3, -5, 11, -5, 11, -3, 3, -3],
+          ),
           TY.s0,
         );
         for (const ex of [-10, 4]) {
@@ -5603,7 +5815,13 @@
           ell(X(0), Y(11), S(3 + 2 * o), S(0.6 + 3.4 * o), TY.mouth);
           teeth(11 - 3.4 * o, 6 + 2 * o, 1 + 0.6 * o);
           if (o > 0.6)
-            rect(X(-2 - o), Y(10 + 3 * o), S(4 + 2 * o), S(1 + 0.4 * o), TY.teeth);
+            rect(
+              X(-2 - o),
+              Y(10 + 3 * o),
+              S(4 + 2 * o),
+              S(1 + 0.4 * o),
+              TY.teeth,
+            );
         } else if (p.mouth === "grit") {
           rect(X(-5), Y(9), S(10), S(3), TY.s0);
           teeth(9.5, 8, 2);
@@ -5720,12 +5938,29 @@
         rect(cx, 110 + by, 1, 34, TY.s1);
         // big traps and that neck, near as wide as his head
         poly(
-          [cx - 16, 64 + by, cx + 16, 64 + by, cx + 37, 86 + by, cx - 37, 86 + by],
+          [
+            cx - 16,
+            64 + by,
+            cx + 16,
+            64 + by,
+            cx + 37,
+            86 + by,
+            cx - 37,
+            86 + by,
+          ],
           TY.s2,
         );
         // the head, unless it's lunging in for a bite (then it's drawn last, in front of everything)
         const close = p.hs > 1.3;
-        limb(cx, 84 + by, 15, hx, hy + 10 * p.hs, 14 * Math.min(p.hs, 2), TY.s2);
+        limb(
+          cx,
+          84 + by,
+          15,
+          hx,
+          hy + 10 * p.hs,
+          14 * Math.min(p.hs, 2),
+          TY.s2,
+        );
         if (!close) rect(hx + 4, hy + 13, 10, 11, TY.s1);
         for (const s of [-1, 1]) {
           circ(cx + s * 40, 90 + by, 11, s < 0 ? TY.s2 : TY.s1);
@@ -6085,8 +6320,7 @@
             back = easeOut(clamp(u / 0.5, 0, 1));
           if (mk === "bite") p.bite = 1 - back;
           else if (back < 1) throwAt(m, wind(mk), hitAt(mk), 1 - back);
-          else
-            set(m, to(wind(mk), m > 0 ? GL : GR, easeOut((u - 0.5) / 0.5)));
+          else set(m, to(wind(mk), m > 0 ? GL : GR, easeOut((u - 0.5) / 0.5)));
           p.mouth = "smirk";
         } else if (st === "guard" || st === "clash") {
           // peek-a-boo: gloves up over his face. Swing into them and he parries you
@@ -6348,7 +6582,7 @@
         }
       }
       function drawPlayer() {
-        if (L.gloves) return drawBoxer();
+        if (usingGloves()) return drawBoxer();
         const P = player,
           T = game.time;
         const bob = Math.sin(T * 2.4);
@@ -6501,6 +6735,56 @@
         ell(tx + side * s, ty - 2 * s, 5.5 * s, 10 * s, pal[2]);
         rect(tx - s, ty - 8 * s, 2 * s, 3 * s, pal[3]);
       }
+      // the Dempsey roll from behind your gloves: guard up high, swaying a beat behind the weave, and a hook at
+      // every turn, swung out wide and then in at his jaw. The finisher dips low and comes up under his chin
+      function drawRollGloves(bob, lift) {
+        const r = game.roll,
+          v = rollView(),
+          up = r.card < ROLL.card ? easeOut(clamp(r.card / 0.25, 0, 1)) : 1,
+          sway = Math.sin(v.phase - 0.6) * 8 * v.ease,
+          [hx, hy] = lastPose && lastPose.head ? lastPose.head : [128, 70],
+          aim = [hx + v.x, hy + 18 + v.y],
+          to = (a, b, k) => [lerp(a[0], b[0], k), lerp(a[1], b[1], k)];
+        for (const s of [-1, 1]) {
+          const home = [
+            lerp(s > 0 ? 206 : 54, s > 0 ? 168 : 88, up) + sway,
+            lerp(192, 178, up) + bob + lift,
+          ];
+          let at = home,
+            sc = lerp(1, 0.9, up),
+            k = 0;
+          const h = r.hook && r.hook.s === s ? r.hook : null;
+          if (h) {
+            const u = clamp(h.t / ROLL.hook, 0, 1),
+              out = h.big
+                ? [home[0] - 20, home[1] + 26]
+                : [home[0] + s * 44, home[1] - 26];
+            if (u < 0.3) at = to(home, out, easeOut(u / 0.3));
+            else if (u < 0.5) {
+              k = ((u - 0.3) / 0.2) ** 1.4;
+              at = to(out, aim, k);
+              sc = lerp(sc, 0.55, k);
+            } else {
+              const e = easeOut((u - 0.5) / 0.5);
+              at = to(aim, home, e);
+              sc = lerp(0.55, sc, e);
+            }
+            if (k > 0.15) {
+              ctx.globalAlpha = 0.6;
+              for (const o of [-10, 0, 10])
+                line(
+                  out[0] + o * 0.4,
+                  out[1] + o,
+                  at[0] + o * 0.2,
+                  at[1] + o * 0.5,
+                  "#cfe0ff",
+                );
+              ctx.globalAlpha = 1;
+            }
+          }
+          drawMyGlove(at[0], at[1], sc, s, [s > 0 ? 246 : 10, 268], false);
+        }
+      }
       function drawBoxer() {
         const P = player,
           T = game.time,
@@ -6512,7 +6796,8 @@
             ? Math.min(1, game.modeT * 1.2) * 60
             : 0;
         // in his intro he swats your sword and shield off screen, and your gloves come up in their place
-        const it = game.mode === "intro" ? game.modeT : Infinity,
+        // (anywhere else, gloves you chose are simply on from the start)
+        const it = game.mode === "intro" && L.gloves ? game.modeT : Infinity,
           gone = (t0) => clamp((it - t0) / 0.55, 0, 1),
           us = gone(TY_T.swat),
           uh = gone(TY_T.swat + 0.12);
@@ -6535,6 +6820,7 @@
         const pp = punchPose(),
           sh = shieldPose(),
           lift = drop + fall + rise;
+        if (game.roll) return drawRollGloves(bob, lift);
         if (pp.k > 0.15) {
           // speed lines trailing the punch
           ctx.globalAlpha = 0.6;
@@ -6731,10 +7017,7 @@
             for (let i = 0; i < 6; i++) {
               const a = lerp(-1, 1, i / 5),
                 x = x0 + a * 18;
-              for (const ty of [
-                100 - (1 - a * a) * 6,
-                126 + (1 - a * a) * 6,
-              ]) {
+              for (const ty of [100 - (1 - a * a) * 6, 126 + (1 - a * a) * 6]) {
                 rect(x - 2, ty - 3, 4, 6, "#5a0a14");
                 rect(x - 1, ty - 2, 2, 4, "#e0303c");
               }
@@ -7228,6 +7511,16 @@
           );
           tone(1047, 1047, 0.6, "square", 0.07, 0.5);
         },
+        // the last duel won: the win jingle, then a fanfare that climbs and holds a big chord
+        victory() {
+          sfx.win();
+          [392, 523, 659, 784, 659, 784].forEach((f, i) =>
+            tone(f, f, 0.14, "square", 0.07, 1.15 + 0.13 * i),
+          );
+          for (const f of [523, 659, 784, 1047])
+            tone(f, f, 1.1, "square", 0.045, 1.95);
+          tone(131, 131, 1.1, "triangle", 0.14, 1.95);
+        },
         lose() {
           [392, 330, 262, 196].forEach((f, i) =>
             tone(f, f * 0.98, 0.3, "triangle", 0.14, 0.25 * i),
@@ -7333,6 +7626,22 @@
           tone(200, 130, 0.5, "sawtooth", 0.1, delay);
           hiss(0.4, 0.12, 1400, 600, "bandpass", delay, false, 1);
         },
+        // the Dempsey roll: charged, its title card, and a punch slipping past your head
+        ultReady() {
+          [784, 988, 1319].forEach((f, i) =>
+            tone(f, f, 0.14, "square", 0.05, 0.06 * i),
+          );
+        },
+        ultCard() {
+          sfx.bell();
+          sfx.crowd();
+          hiss(0.6, 0.25, 400, 4000, "bandpass", 0, true, 1.5);
+          tone(110, 220, 0.5, "sawtooth", 0.08, 0, true);
+        },
+        dodge() {
+          hiss(0.18, 0.16, 1800, 500, "bandpass", 0, false, 1.4);
+          tone(260, 140, 0.12, "triangle", 0.05);
+        },
         bell(delay = 0) {
           [0, 0.3].forEach((t) => {
             tone(1250, 1240, 1.1, "triangle", 0.12, delay + t);
@@ -7360,8 +7669,22 @@
           tone(185, 139, 0.25, "square", 0.06, 0.02);
         },
       };
-      // a level can swap in its own sounds for your actions (Mike's: leather gloves, not a sword and shield)
-      const play = (k, ...a) => ((L.sounds && L.sounds[k]) || sfx[k])(...a);
+      // your gloves sound like leather, not a sword and shield (Mike's level, or anywhere once you've won them)
+      const GLOVE_SOUNDS = {
+        parry: () => sfx.glovePop(),
+        parryHeavy: (k) => sfx.glovePopHeavy(k),
+        swing: () => sfx.punchSwish(),
+        hit: () => sfx.punchHit(),
+        block: () => sfx.gloveBlock(),
+        clash: () => sfx.gloveClash(),
+      };
+      // a level can swap in its own sounds for your actions
+      const play = (k, ...a) =>
+        (
+          (usingGloves() && GLOVE_SOUNDS[k]) ||
+          (L.sounds && L.sounds[k]) ||
+          sfx[k]
+        )(...a);
 
       /* ================= Game state ================= */
       // realtime effects (impactT, star, punch*, slowT, cine) run on wall-clock time so they play through hitstop and slow-mo
@@ -7447,6 +7770,8 @@
           snarl: () => sfx.snarl(),
           onCine: () => {},
           winText: "The dragon is slain",
+          name: "Dragon",
+          icon: dragonIcon,
         },
         {
           moves: SAMURAI_MOVES,
@@ -7475,41 +7800,8 @@
           onCine: () =>
             Object.assign(boss, { disarmed: true, disarmT: 0, landed: false }),
           winText: "The samurai yields",
-        },
-        {
-          moves: KNIGHT_MOVES,
-          chainWindup: KNIGHT_CHAIN,
-          deflect: KNIGHT_DEFLECT,
-          weights: { cut: 0.45, smite: 0.3, lunge: 0.25 },
-          first: "cut",
-          counter: "cut",
-          doubleKey: null,
-          rageCombo: KNIGHT_COMBO,
-          feint: 0,
-          feintRage: 0,
-          feintInto: {},
-          glintLead: 0,
-          counterAfter: 3,
-          bg: bgKnight,
-          pose: knightPose,
-          drawBoss: drawKnightBody,
-          front: knightFront,
-          backdrop: knightBackdrop,
-          ambient: knightAmbient,
-          shadow: [56, "#0a0d16"],
-          sparks: "#c8d0e0",
-          shout: (d) => sfx.knightRoar(d),
-          death: (d) => sfx.clatter(d),
-          snarl: () => sfx.shieldTaps(),
-          onCine: () =>
-            Object.assign(boss, {
-              helmOff: true,
-              helmT: 0,
-              helmLanded: false,
-              helmFrom:
-                lastPose && lastPose.head ? lastPose.head.slice() : [128, 60],
-            }),
-          winText: "The black knight falls",
+          name: "Samurai",
+          icon: samuraiIcon,
         },
         {
           moves: LICH_MOVES,
@@ -7546,6 +7838,45 @@
             sfx.rumble();
           },
           winText: "The lich is put to rest",
+          name: "Lich",
+          icon: lichIcon,
+        },
+        {
+          moves: KNIGHT_MOVES,
+          chainWindup: KNIGHT_CHAIN,
+          deflect: KNIGHT_DEFLECT,
+          weights: { cut: 0.45, smite: 0.3, lunge: 0.25 },
+          first: "cut",
+          counter: "cut",
+          doubleKey: null,
+          rageCombo: KNIGHT_COMBO,
+          feint: 0,
+          feintRage: 0,
+          feintInto: {},
+          glintLead: 0,
+          counterAfter: 3,
+          bg: bgKnight,
+          pose: knightPose,
+          drawBoss: drawKnightBody,
+          front: knightFront,
+          backdrop: knightBackdrop,
+          ambient: knightAmbient,
+          shadow: [56, "#0a0d16"],
+          sparks: "#c8d0e0",
+          shout: (d) => sfx.knightRoar(d),
+          death: (d) => sfx.clatter(d),
+          snarl: () => sfx.shieldTaps(),
+          onCine: () =>
+            Object.assign(boss, {
+              helmOff: true,
+              helmT: 0,
+              helmLanded: false,
+              helmFrom:
+                lastPose && lastPose.head ? lastPose.head.slice() : [128, 60],
+            }),
+          winText: "The black knight falls",
+          name: "Black knight",
+          icon: knightIcon,
         },
         {
           moves: TYSON_MOVES,
@@ -7580,8 +7911,8 @@
           // like the knight he puts his guard up mid-opening, but after 2 or 3 hits, you never know which
           counterAfter: [2, 3],
           riposte: "jab",
-          hp: 25,
-          rageAt: 15,
+          hp: 30,
+          rageAt: 20,
           idle: [0.5, 1.1],
           idleRage: [0.3, 0.7],
           introDur: TY_T.end,
@@ -7602,14 +7933,8 @@
           },
           death: (d) => sfx.knockdown(d),
           snarl: () => sfx.gloveTaps(),
-          sounds: {
-            parry: () => sfx.glovePop(),
-            parryHeavy: (k) => sfx.glovePopHeavy(k),
-            swing: () => sfx.punchSwish(),
-            hit: () => sfx.punchHit(),
-            block: () => sfx.gloveBlock(),
-            clash: () => sfx.gloveClash(),
-          },
+          sounds: GLOVE_SOUNDS,
+          rollPrep: 7,
           onInterrupt: tysonBreak,
           // the rage combo's last hit: your left glove knocks his fist aside, your right comes up under his chin
           onCine: () => {
@@ -7648,6 +7973,14 @@
         Number(store.get("dragonDuelUnlocked")) || 1,
         { "#level2": 2, "#level3": 3, "#level4": 4 }[location.hash] || 1,
       );
+      // beating Mike wins you his gloves (and the Dempsey roll) for every other duel; #gloves unlocks them for testing
+      let glovesWon =
+          store.get("dragonDuelGloves") === "1" || location.hash === "#gloves",
+        weapon =
+          glovesWon && store.get("dragonDuelWeapon") === "gloves"
+            ? "gloves"
+            : "sword";
+      const usingGloves = () => !!L.gloves || weapon === "gloves";
 
       const HIT_FX = {
         claw: (d) => {
@@ -7884,7 +8217,7 @@
         game.punchAt = at;
       }
 
-      // the rage combo's last parry: impact frame, slow motion, letterbox, push in on the boss's face
+      // the rage combo's last parry, the killing blow: impact frame, slow motion, letterbox, push in on the boss's face
       const CINE = { freeze: 0.1, slowEnd: 1.35, end: 1.9, slow: 0.25 };
       function startCinematic(at) {
         const [hx, hy] = lastPose && lastPose.head ? lastPose.head : [128, 70];
@@ -7895,6 +8228,195 @@
         shake(6, 0.5);
         L.onCine();
       }
+      // the Dempsey roll (gloves only): a title card with the game frozen, then a figure-eight weave nothing can hit,
+      // a hook at every turn of the eight, and a finishing uppercut. It weaves for the same set time against every
+      // boss, so a long rage combo can outlast it. Hooks count as hits up to `hits` per roll
+      const ROLL = {
+        card: 0.85,
+        dur: 5,
+        period: 1.1,
+        hits: 6,
+        hook: 0.26,
+        missFollow: 0.12,
+      };
+      const BUSY = new Set([
+        "windup",
+        "strike",
+        "feint",
+        "deflect",
+        "open",
+        "clash",
+        "snarl",
+        "rageRoar",
+      ]);
+      const bossBusy = () =>
+        boss.queue.length > 0 || boss.comboPending || BUSY.has(boss.state);
+      function startRoll() {
+        if (
+          game.mode !== "fight" ||
+          game.cine ||
+          game.roll ||
+          !usingGloves() ||
+          !player.ult
+        )
+          return;
+        Object.assign(player, { ult: false, streak: 0, lock: 0, buffer: null });
+        game.roll = {
+          t: 0,
+          card: 0,
+          apex: 0,
+          hits: 0,
+          hook: null,
+          ending: false,
+          endT: 0,
+        };
+        sfx.ultCard();
+      }
+      function updateRoll(dt) {
+        const r = game.roll;
+        if (!r || r.card < ROLL.card) return;
+        r.t += dt;
+        if (r.ending) r.endT += dt;
+        // a hook at every turn of the eight, thrown by the hand on the side your head swung to
+        const k = Math.floor((r.t - ROLL.period / 4) / (ROLL.period / 2)) + 1;
+        if (!r.ending && k > r.apex) {
+          r.apex = k;
+          r.hook = { t: 0, s: k % 2 ? 1 : -1, landed: false };
+          play("swing");
+        }
+        if (r.hook) {
+          r.hook.t += dt;
+          if (!r.hook.landed && r.hook.t >= ROLL.hook * 0.5) {
+            r.hook.landed = true;
+            hookLands(r.hook);
+            if (!game.roll) return;
+          }
+          if (r.hook.t >= ROLL.hook) r.hook = null;
+        }
+        // time's up: a finishing uppercut
+        if (!r.ending && !r.hook && r.t >= ROLL.dur) {
+          r.ending = true;
+          r.endT = 0;
+          r.hook = { t: 0, s: 1, big: true, landed: false };
+          play("swing");
+        }
+        if (r.ending && r.endT >= ROLL.hook + 0.25) game.roll = null;
+      }
+      function hookLands(h) {
+        const d = boss,
+          r = game.roll,
+          [hx, hy] = lastPose && lastPose.head ? lastPose.head : [128, 70],
+          x = hx - h.s * 8,
+          y = hy + 16;
+        if (h.big || r.hits < ROLL.hits) {
+          d.hits++;
+          stats.hits++;
+          r.hits++;
+        }
+        d.flash = 0.06;
+        d.flinch = h.big ? 1.6 : 1.1;
+        d.flinchDir = -h.s;
+        hitstop(h.big ? 0.12 : 0.05);
+        shake(h.big ? 7 : 3, h.big ? 0.4 : 0.15);
+        play("hit");
+        burst(x, y, h.big ? 30 : 14, {
+          speed: [40, h.big ? 200 : 130],
+          life: [0.15, 0.4],
+          g: 120,
+          cols: ["#ffffff", "#ffe0a0", L.sparks],
+          size: [1, 2],
+          layer: 1,
+        });
+        game.star = {
+          t: 0,
+          dur: h.big ? 0.25 : 0.12,
+          x,
+          y,
+          s: h.big ? 30 : 16,
+        };
+        if (h.big) {
+          game.impactT = 0.07;
+          flashScreen("#ffffff", 0.5, 0.08);
+          sfx.chinHit();
+        }
+        // rolling through the last strike of his rage combo is as good as parrying it: the finisher knocks him out.
+        // Otherwise it leaves him reeling if he's between attacks; mid-attack he shrugs it off and carries on
+        if (d.hits >= bossHp() || (h.big && r.ko)) {
+          bossDies();
+          if (!r.ending) Object.assign(r, { ending: true, endT: 0 }); // the weave winds down as he falls
+        } else if (h.big && !bossBusy()) {
+          // he keeps a valid move so his stunned pose has something to recover from; t starts past the parry-recoil frames
+          const key = d.moveKey || L.first;
+          silence(d.channelSnd);
+          Object.assign(d, {
+            state: "stunned",
+            t: 0.2,
+            moveKey: key,
+            move: L.moves[key],
+            queue: [],
+            chain: null,
+            feint: false,
+            exploded: true,
+            openHits: 0,
+            channelSnd: null,
+            stunDur: CFG.comboStun + 0.2,
+          });
+        }
+      }
+      // the Dempsey roll: his strike sails past your head, and in a chain the next one follows straight on
+      function dodged() {
+        const d = boss,
+          chainOn = d.queue.length > 0;
+        if (!chainOn && d.chain === "rage") game.roll.ko = true;
+        sfx.dodge();
+        d.state = "follow";
+        d.t = 0;
+        d.followDur = chainOn ? ROLL.missFollow : d.move.follow;
+        if (!chainOn) {
+          d.queue = [];
+          d.chain = null;
+        }
+      }
+      // the weave: your head traces a sideways figure eight, dipping as it crosses the middle, so the world swings
+      // the other way. bars is the letterbox: full for the title card, a little thinner while you roll
+      function rollView() {
+        const r = game.roll;
+        if (!r) return null;
+        const ph = (TAU * r.t) / ROLL.period,
+          out = r.ending ? 1 - smooth(0.1, ROLL.hook + 0.25, r.endT) : 1,
+          ease = smooth(0, 0.3, r.t) * out,
+          m = (reduceMotion ? 0.35 : 1) * ease,
+          right = Math.sin(ph) * 26 * m,
+          down = (Math.sin(2 * ph) * 5 + Math.cos(ph) ** 2 * 8 - 4) * m;
+        return {
+          x: R(-right),
+          y: R(-down),
+          tilt: reduceMotion ? 0 : -2 * Math.cos(ph) * ease,
+          phase: ph,
+          ease,
+          bars:
+            (r.card < ROLL.card
+              ? smooth(0, 0.12, r.card)
+              : 0.75 + 0.25 * (1 - smooth(0, 0.3, r.t))) * out,
+        };
+      }
+      // the roll's motion lines: dense streaks behind the title card, lighter ones trailing the weave
+      function rollLines(v) {
+        const r = game.roll,
+          card = r.card < ROLL.card,
+          dir = card ? -1 : Math.cos(v.phase) > 0 ? -1 : 1,
+          n = card ? 26 : R(10 * Math.abs(Math.cos(v.phase)) * v.ease);
+        ctx.globalAlpha = card ? 0.5 : 0.3;
+        for (let i = 0; i < n; i++) {
+          const y = rand(26, H - 26),
+            x = rand(-40, W),
+            len = rand(30, card ? 140 : 70);
+          rect(x, y, len, 1, "#ffffff");
+          if (card && i % 4 === 0)
+            rect(x + dir * 10, y + 1, len * 0.6, 1, "#aebfe0");
+        }
+        ctx.globalAlpha = 1;
+      }
       function cineAmount() {
         const t = game.cine ? game.cine.t : 0;
         return game.cine
@@ -7902,6 +8424,7 @@
           : 0;
       }
       function timeScale() {
+        if (game.roll && game.roll.card < ROLL.card) return 0; // the roll's title card holds the fight still
         const c = game.cine;
         if (c)
           return c.t < CINE.freeze
@@ -7919,6 +8442,7 @@
           game.star = null;
         if (game.slowT > 0 && game.hitstop <= 0)
           game.slowT = Math.max(0, game.slowT - rdt);
+        if (game.roll && game.roll.card < ROLL.card) game.roll.card += rdt;
         const c = game.cine;
         if (c) {
           c.t += rdt;
@@ -7926,7 +8450,11 @@
             c.whooshed = true;
             sfx.whoosh();
           }
-          if (c.t >= CINE.end) game.cine = null;
+          // parrying the last strike of his rage combo finishes him: he falls once the cinematic's done
+          if (c.t >= CINE.end) {
+            game.cine = null;
+            if (game.mode === "fight") bossDies();
+          }
         }
       }
       function focusLines(fx, fy, k) {
@@ -8094,10 +8622,13 @@
       }
       function toIdle(dur) {
         const d = boss;
+        // rollPrep (Mike): the rage combo also waits until he's thrown that many parryable punches since you were
+        // last hit, so a clean run always has the Dempsey roll charged for it, with a couple to spare
         if (
           game.mode === "fight" &&
           d.hits >= (L.rageAt || CFG.rageAt) &&
-          !d.raged
+          !d.raged &&
+          (!L.rollPrep || player.ult || d.since >= L.rollPrep)
         ) {
           d.raged = true;
           d.comboPending = !!L.rageCombo;
@@ -8109,9 +8640,7 @@
           shake(3, 1.1);
           return;
         }
-        const r = d.raged
-          ? L.idleRage || CFG.idleRage
-          : L.idle || CFG.idle;
+        const r = d.raged ? L.idleRage || CFG.idleRage : L.idle || CFG.idle;
         Object.assign(d, {
           state: "idle",
           t: 0,
@@ -8123,9 +8652,13 @@
         });
       }
       function landHit() {
+        if (game.roll) return dodged();
         const d = boss,
           before = player.hp,
           dmg = d.raged && d.move.rageDmg ? d.move.rageDmg : d.move.dmg;
+        // a hit breaks your parry streak (a charged roll stays charged)
+        player.streak = 0;
+        d.since = 0;
         player.hp = Math.max(0, player.hp - dmg);
         stats.taken += before - player.hp;
         for (let i = player.hp; i < before; i++) {
@@ -8165,6 +8698,14 @@
         const d = boss;
         if (d.state === "strike" && !d.move.unparryable) {
           stats.parries++;
+          if (
+            usingGloves() &&
+            !player.ult &&
+            ++player.streak >= CFG.ultStreak
+          ) {
+            player.ult = true;
+            sfx.ultReady();
+          }
           // k: 0 for light hits, 0.5 for 2-heart hits, 1 for the 3-heart heavies (or the move's own heft)
           const k = d.move.heft ?? clamp((d.move.dmg - 1) / 2, 0, 1),
             finale = d.chain === "rage" && d.queue.length === 0;
@@ -8354,7 +8895,7 @@
       }
       // your sword breaks a channelled spell (the lich's curse): it counts as a hit and he reels.
       // Mid-combo he shakes it off and carries on; otherwise he's open for more.
-      // Breaking the charge that ends a rage combo (Mike's super uppercut) plays the cinematic
+      // Breaking the charge that ends a rage combo (Mike's super uppercut) plays the cinematic and finishes him
       function interrupt() {
         const d = boss,
           at = lastPose && lastPose.weakAt ? lastPose.weakAt : [128, 104],
@@ -8418,7 +8959,7 @@
         // a press while Mike talks skips ahead to his swat
         if (game.mode === "intro" && L.introSkip && game.modeT < L.introSkip)
           game.modeT = L.introSkip;
-        if (game.mode !== "fight" || game.cine) return;
+        if (game.mode !== "fight" || game.cine || game.roll) return;
         if (player.lock > 0) {
           player.buffer = { act: a, at: game.realTime };
           return;
@@ -8456,6 +8997,7 @@
               } else {
                 d.state = "strike";
                 d.t = 0;
+                if (!d.move.unparryable) d.since = (d.since || 0) + 1;
                 sfx[d.moveKey + "Strike"]();
               }
             }
@@ -8987,16 +9529,238 @@
       }
 
       /* ================= Render ================= */
+      // the backdrop, with its edge pixels stretched over whatever the roll's swing uncovers
+      function drawBackground(ox, oy) {
+        const b = L.bg,
+          ax = Math.abs(ox);
+        ctx.drawImage(b, 0, 0);
+        if (ox > 0) ctx.drawImage(b, 0, 0, 1, H, -ox, 0, ox, H);
+        if (ox < 0) ctx.drawImage(b, W - 1, 0, 1, H, W, 0, -ox, H);
+        if (oy > 0) ctx.drawImage(b, 0, 0, W, 1, -ax, -oy, W + 2 * ax, oy);
+        if (oy < 0) ctx.drawImage(b, 0, H - 1, W, 1, -ax, H, W + 2 * ax, -oy);
+      }
+      // the roll's title card: slams in from the right, holds, flies out left
+      function drawUltCard(u) {
+        if (u < 0) {
+          if (ultCard.style.opacity !== "0") ultCard.style.opacity = "0";
+          return;
+        }
+        const x =
+          u < 0.18
+            ? 120 * (1 - easeOut(u / 0.18))
+            : u < 0.8
+              ? -6 * ((u - 0.18) / 0.62)
+              : -6 - 120 * ((u - 0.8) / 0.2) ** 2;
+        ultCard.style.opacity = String(u < 0.8 ? 1 : 1 - (u - 0.8) / 0.2);
+        ultCard.style.transform = `translate(${x}%, -50%) skewX(-12deg) scale(${1 + 0.08 * Math.max(0, 1 - u / 0.25)})`;
+      }
+      // the roll's reaction cam: a ringside commentator in a little TV inset. It flicks on during the title card,
+      // catches him mid-sentence, he does a double take, and it flicks off a beat into the weave (times from the roll's start)
+      const CAM = { on: 0.12, take: 0.42, off: 2.05, flick: 0.1 },
+        LIVE = [
+          "X..X..X..X..XXX",
+          "XXX.X..X..X.XXX",
+          "X.XX.XX.XX.X.X.",
+          "XXXX..XX.X..XXX",
+        ];
+      function drawReactCam() {
+        const r = game.roll,
+          rt = r ? r.card + r.t : -1,
+          vis = rt >= CAM.on && rt < CAM.off + CAM.flick;
+        if (reactCam.hidden === vis) reactCam.hidden = !vis;
+        if (!vis) return;
+        // the old-TV switch: opens out of a bright line, shuts down to a line and then a dot
+        const on = easeOut(clamp((rt - CAM.on) / CAM.flick, 0, 1)),
+          off = clamp((rt - CAM.off) / CAM.flick, 0, 1);
+        reactCam.style.transform = `scale(${off < 0.6 ? 1 : 1 - (off - 0.6) / 0.4}, ${Math.max(0.04, on * (1 - off * 1.6))})`;
+        g = camCtx;
+        const w = reactCam.width,
+          h = reactCam.height,
+          st = rt - CAM.take,
+          shock = st >= 0,
+          jolt = !shock
+            ? 0
+            : st < 0.08
+              ? -3
+              : reduceMotion
+                ? -2
+                : -2 + (Math.floor(rt * 24) % 2),
+          hx = 30,
+          hy = 22 + jolt,
+          skin = "#f0b48a",
+          skinD = "#c98460",
+          hair = "#b8b8c4",
+          ink = "#101018";
+        // the booth: arena lights, and the crowd behind him (all flashbulbs once he's seen it)
+        rect(0, 0, w, h, "#141a3a");
+        for (const x of [7, 19, 41, 53]) {
+          rect(x - 1, 5, 3, 1, "#5a6ab0");
+          rect(x, 4, 1, 3, "#5a6ab0");
+          rect(x, 5, 1, 1, "#ffffff");
+        }
+        for (let i = 0; i < 11; i++)
+          circ(2 + i * 6, 31 + (i % 2) * 2, 4, "#0c1029");
+        rect(0, 33, w, h - 33, "#0c1029");
+        if (shock)
+          for (let i = 0; i < 3; i++)
+            if (Math.random() < 0.35)
+              star(R(rand(4, w - 4)), R(rand(25, 34)), 1, "#fff4c0", "#ffffff");
+        // suit, shirt and tie
+        poly([4, h, 12, 38, 22, 35, 38, 35, 48, 38, 56, h], "#23305e");
+        poly([23, 35, 30, 45, 37, 35], "#efe4c8");
+        poly([29, 38, 31, 38, 32, 45, 28, 45], "#c8202a");
+        rect(29, 36, 2, 2, "#9a1820");
+        line(23, 35, 28, 45, "#161f40");
+        line(37, 35, 32, 45, "#161f40");
+        rect(26, hy + 7, 8, 36 - hy - 7, skinD);
+        // his head: bald on top, grey at the sides, the jaw dropping when he sees it
+        const ry = shock ? 12 : 11;
+        ell(hx + 1, hy + 1, 9, ry, skinD);
+        ell(hx, hy, 8.5, ry - 0.5, skin);
+        ell(hx - 9, hy + 1, 2, 3, skinD);
+        ell(hx + 9, hy + 1, 2, 3, skinD);
+        rect(hx - 4, hy - 9, 3, 1, "#ffd8b8");
+        ell(hx - 8, hy - 3, 2, 4, hair);
+        ell(hx + 8, hy - 3, 2, 4, hair);
+        // the combover: combed across, or standing straight up
+        if (shock) {
+          line(hx - 3, hy - 10, hx - 5, hy - 16, hair);
+          line(hx, hy - 11, hx, hy - 17, hair);
+          line(hx + 3, hy - 10, hx + 5, hy - 16, hair);
+        } else {
+          line(hx - 8, hy - 6, hx - 1, hy - 10, hair);
+          line(hx - 7, hy - 5, hx + 3, hy - 10, hair);
+        }
+        // the headset: band over the top, a cup on each ear, the mic at the corner of his mouth
+        const band = [];
+        for (let i = 0; i <= 8; i++) {
+          const a = Math.PI * (1.05 + 0.9 * (i / 8));
+          band.push([hx + Math.cos(a) * 10, hy - 1 + Math.sin(a) * 12, 0.6]);
+        }
+        chain(band, "#26262e");
+        rect(hx - 12, hy - 3, 4, 8, "#3a3a44");
+        rect(hx + 8, hy - 3, 4, 8, "#3a3a44");
+        rect(hx - 12, hy - 3, 1, 8, "#55555f");
+        line(hx - 10, hy + 5, hx - 6, hy + 9, "#26262e");
+        circ(hx - 5, hy + 9, 1.5, "#1a1a22");
+        // brows and eyes: level and watching the fight, then shot up and bulging
+        const brow = "#6c6c78";
+        if (shock) {
+          rect(hx - 8, hy - 6, 2, 1, brow);
+          rect(hx - 6, hy - 7, 3, 1, brow);
+          rect(hx + 3, hy - 7, 3, 1, brow);
+          rect(hx + 6, hy - 6, 2, 1, brow);
+          for (const ex of [hx - 4, hx + 4]) {
+            circ(ex, hy - 1, 3, "#ffffff");
+            rect(ex, hy - 1, 1, 1, ink);
+          }
+        } else {
+          rect(hx - 7, hy - 4, 5, 1, brow);
+          rect(hx + 2, hy - 4, 5, 1, brow);
+          for (const ex of [hx - 4, hx + 4]) {
+            rect(ex - 1, hy - 1, 3, 2, "#ffffff");
+            rect(ex - 1, hy - 1, 1, 2, ink);
+          }
+        }
+        // his glasses, on his nose or flown up off his face
+        const gy = shock ? hy - 10 - Math.min(2, R(st * 20)) : hy - 3;
+        for (const [i, ex] of [
+          [0, hx - 4],
+          [1, hx + 4],
+        ]) {
+          const y = gy - (shock && i === 0 ? 1 : 0);
+          rect(ex - 3, y, 7, 1, ink);
+          rect(ex - 3, y + 4, 7, 1, ink);
+          rect(ex - 3, y, 1, 5, ink);
+          rect(ex + 3, y, 1, 5, ink);
+          g.globalAlpha = 0.35;
+          rect(ex - 2, y + 1, 5, 3, "#9fc0e8");
+          g.globalAlpha = 1;
+          rect(ex + 1, y + 1, 1, 1, "#ffffff");
+        }
+        rect(hx - 1, gy + 1, 2, 1, ink);
+        ell(hx, hy + 3, 2, 2, skinD);
+        rect(hx - 1, hy + 2, 1, 1, "#ffd8b8");
+        // mouth: yammering, then hanging open under the moustache
+        if (shock) {
+          ell(hx, hy + 8, 3, 4, "#3a0a10");
+          ell(hx, hy + 11, 2, 1, "#d0505a");
+          rect(hx - 2, hy + 5, 5, 1, "#ffffff");
+        } else
+          rect(hx - 2, hy + 6, 4, Math.floor(rt * 14) % 2 ? 2 : 1, "#3a0a10");
+        rect(hx - 4, hy + 4, 9, 2, "#9a9aa6");
+        rect(hx - 5, hy + 5, 1, 2, "#9a9aa6");
+        rect(hx + 5, hy + 5, 1, 2, "#9a9aa6");
+        rect(hx - 3, hy + 5, 7, 1, "#7c7c88");
+        if (shock) {
+          // hands flying up to his cheeks, sweat flying off, and the jolt's surprise lines
+          const hu = easeOut(clamp(st / 0.1, 0, 1));
+          for (const s of [-1, 1]) {
+            const px = hx + s * 10,
+              py = lerp(h + 8, hy + 6, hu);
+            limb(hx + s * 16, h + 4, 3, px + s * 2, py + 5, 2.5, "#23305e");
+            rect(px - 2 + s, py + 3, 4, 2, "#efe4c8");
+            ell(px, py, 3, 4, skin);
+            for (let f = -1; f <= 1; f++)
+              rect(px + f * 2, py - 6 + Math.abs(f), 1, 3, skin);
+            const u = (st * 1.6 + (s > 0 ? 0.5 : 0)) % 1,
+              dx = hx + s * (11 + u * 6),
+              dy = hy - 8 - u * 4 + u * u * 14;
+            rect(dx, dy, 2, 3, "#a8d8ff");
+            rect(dx, dy, 1, 1, "#ffffff");
+            if (st < 0.6 || Math.floor(rt * 8) % 2) {
+              line(hx + s * 11, hy - 9, hx + s * 14, hy - 12, "#fff4c0");
+              line(hx + s * 8, hy - 13, hx + s * 9, hy - 16, "#fff4c0");
+            }
+          }
+        }
+        // scanlines, the switch-on flash, the bezel and a blinking LIVE tag
+        g.globalAlpha = 0.14;
+        for (let y = 1; y < h; y += 2) rect(0, y, w, 1, "#000000");
+        if (on < 1) {
+          g.globalAlpha = 1 - on;
+          rect(0, 0, w, h, "#ffffff");
+        }
+        g.globalAlpha = 1;
+        rect(0, 0, w, 1, "#000000");
+        rect(0, h - 1, w, 1, "#000000");
+        rect(0, 0, 1, h, "#000000");
+        rect(w - 1, 0, 1, h, "#000000");
+        rect(1, 1, w - 2, 1, "#efe4c8");
+        rect(1, h - 2, w - 2, 1, "#efe4c8");
+        rect(1, 1, 1, h - 2, "#efe4c8");
+        rect(w - 2, 1, 1, h - 2, "#efe4c8");
+        rect(4, 4, 23, 9, "#c8202a");
+        if (Math.floor(rt * 4) % 2 === 0) rect(6, 7, 3, 3, "#ffffff");
+        LIVE.forEach((c, i) => {
+          for (let p = 0; p < 15; p++)
+            if (c[p] === "X")
+              rect(
+                11 + i * 4 + (p % 3),
+                6 + Math.floor(p / 3),
+                1,
+                1,
+                "#ffffff",
+              );
+        });
+        g = ctx;
+      }
       function render() {
         const p = L.pose();
         g = ctx;
         ctx.globalAlpha = 1;
+        ctx.imageSmoothingEnabled = false;
         // impact frame: a beat of black with the boss burned white
         const impact = game.impactT > 0,
-          ck = cineAmount();
+          ck = cineAmount(),
+          rv = rollView(),
+          ox = rv ? rv.x : 0,
+          oy = rv ? rv.y : 0;
         if (impact) rect(0, 0, W, H, "#07050d");
-        else {
-          ctx.drawImage(L.bg, 0, 0);
+        // the Dempsey roll swings the world around the weave; your gloves and the HUD stay with you
+        ctx.setTransform(1, 0, 0, 1, ox, oy);
+        if (!impact) {
+          drawBackground(ox, oy);
           L.backdrop();
           drawParticles(0);
           if (ck > 0) {
@@ -9031,6 +9795,20 @@
           ctx.globalAlpha = 1;
         }
         drawParticles(1);
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        if (rv && !impact) {
+          if (game.roll.card < ROLL.card) {
+            ctx.globalAlpha = 0.4 * smooth(0, 0.12, game.roll.card);
+            rect(0, 0, W, H, "#07050d");
+            ctx.globalAlpha = 1;
+          }
+          rollLines(rv);
+        }
+        drawUltCard(
+          game.roll && game.roll.card < ROLL.card
+            ? game.roll.card / ROLL.card
+            : -1,
+        );
         drawPlayer();
         drawParticles(2);
         if (!impact) drawFx();
@@ -9059,10 +9837,13 @@
         }
         ctx.globalAlpha = 1;
         drawHud();
+        drawReactCam();
         // letterbox bars live outside the canvas so the camera push-in can't scale them off screen
-        const bar = ck > 0 ? R(24 * ck) * scale + "px" : "0px";
+        const bk = Math.max(ck, rv ? rv.bars : 0),
+          bar = bk > 0 ? R(24 * bk) * scale + "px" : "0px";
         barTop.style.height = bar;
         barBot.style.height = bar;
+        syncRollBtn();
         // camera: shake, the parry punch-in, and the cinematic push toward the boss's face
         const sk = shakeT > 0 ? shakeT / shakeDur : 0,
           c = game.cine,
@@ -9076,10 +9857,12 @@
                 (1 - smooth(CINE.slowEnd, CINE.end, ct))
               : 0) +
             game.punchAmt * (game.punchT / 0.25);
-        if (sk > 0 || z > 1.001) {
-          const o = c ? c.focus : game.punchAt || [128, 112];
+        // rolling, your head leans into the weave (scaled up a touch so the tilt never shows the frame's edge)
+        const tilt = rv ? rv.tilt : 0;
+        if (sk > 0 || z > 1.001 || tilt) {
+          const o = c ? c.focus : rv ? [128, 112] : game.punchAt || [128, 112];
           cvs.style.transformOrigin = `${o[0] * scale}px ${o[1] * scale}px`;
-          cvs.style.transform = `translate(${R((Math.random() * 2 - 1) * shakeMag * sk) * scale}px, ${R((Math.random() * 2 - 1) * shakeMag * sk) * scale}px) scale(${z})`;
+          cvs.style.transform = `translate(${R((Math.random() * 2 - 1) * shakeMag * sk) * scale}px, ${R((Math.random() * 2 - 1) * shakeMag * sk) * scale}px) rotate(${tilt}deg) scale(${z * (tilt ? 1.04 : 1)})`;
         } else cvs.style.transform = "";
       }
 
@@ -9127,8 +9910,10 @@
         } else if (game.mode === "fight") {
           game.fightTime += dt;
           updateBoss(dt);
+          updateRoll(dt);
         } else if (game.mode === "winAnim" || game.mode === "loseAnim") {
           updateBoss(dt);
+          updateRoll(dt); // a roll that knocked him out winds down as he falls
           if (game.mode === "loseAnim" && game.modeT > 2.3) endScreen(false);
         } else {
           updateBoss(dt);
@@ -9148,8 +9933,10 @@
         titlePanel.hidden = which !== "title";
         endPanel.hidden = which !== "end";
         codePanel.hidden = which !== "code";
+        $("victoryPanel").hidden = which !== "victory";
       }
-      function startFight(idx = levelIdx) {
+      // quiet: reset without his entrance shout (going back to the title screen)
+      function startFight(idx = levelIdx, quiet = false) {
         levelIdx = idx;
         L = LEVELS[idx];
         audioOn();
@@ -9164,6 +9951,8 @@
           swingT: -1,
           recoilT: -1,
           hurtT: -1,
+          streak: 0,
+          ult: false,
         });
         silence(boss.channelSnd);
         Object.assign(boss, {
@@ -9205,6 +9994,7 @@
           swatted: false,
           swatted2: false,
           belled: false,
+          since: 0,
         });
         Object.assign(KN, { next: rand(5, 9), bolt: 0 });
         TYS.flashes = [];
@@ -9225,24 +10015,114 @@
           star: null,
           slowT: 0,
           punchT: 0,
+          roll: null,
         });
         overlay.hidden = true;
-        L.shout(0.35);
+        if (!quiet) L.shout(0.35);
       }
+      // back to the title screen, with the first duel set up behind it
+      function toTitle() {
+        startFight(0, true);
+        game.mode = "title";
+        showOverlay("title");
+        showLevelButtons();
+      }
+      // the victory screen's roster: a little portrait of each foe, with your best rank against them
+      const RANKS = "SABC",
+        LAST = LEVELS.findLastIndex((l) => !l.secret);
+      function dragonIcon() {
+        limb(8, 8, 1.5, 3, 1, 0.5, C.h1);
+        limb(16, 8, 1.5, 21, 1, 0.5, C.h1);
+        ell(12, 11, 7, 6, C.d2);
+        ell(12, 17, 5, 5, C.d2);
+        ell(12, 19, 4, 3, C.d1);
+        rect(5, 8, 14, 1, C.d1);
+        rect(10, 13, 4, 1, C.d3);
+        rect(6, 10, 4, 2, C.eye);
+        rect(14, 10, 4, 2, C.eye);
+        rect(8, 10, 1, 2, C.pupil);
+        rect(15, 10, 1, 2, C.pupil);
+        rect(10, 17, 1, 1, C.d0);
+        rect(13, 17, 1, 1, C.d0);
+        rect(9, 21, 1, 2, C.fang);
+        rect(14, 21, 1, 2, C.fang);
+      }
+      function samuraiIcon() {
+        poly([2, 13, 22, 13, 20, 18, 4, 18], K.l2);
+        ell(12, 9, 8, 6, K.l3);
+        rect(4, 12, 16, 2, K.l1);
+        limb(12, 6, 1, 5, 0, 0.5, K.au1);
+        limb(12, 6, 1, 19, 0, 0.5, K.au1);
+        rect(11, 5, 3, 3, K.au2);
+        rect(7, 14, 10, 8, K.m1);
+        rect(7, 14, 10, 2, K.l0);
+        rect(8, 14, 2, 1, K.eye);
+        rect(14, 14, 2, 1, K.eye);
+        rect(8, 18, 3, 1, K.hair);
+        rect(13, 18, 3, 1, K.hair);
+        rect(10, 20, 4, 1, K.l0);
+      }
+      function lichIcon() {
+        ell(12, 13, 9, 10, Z.r3);
+        ell(12, 14, 6, 8, Z.r0);
+        ell(12, 12, 4.5, 5, Z.b3);
+        rect(9, 16, 7, 3, Z.b2);
+        for (const x of [10, 12, 14]) rect(x, 17, 1, 2, Z.b0);
+        rect(9, 11, 2, 2, Z.s1);
+        rect(14, 11, 2, 2, Z.s1);
+        rect(10, 11, 1, 1, Z.s4);
+        rect(14, 11, 1, 1, Z.s4);
+        rect(12, 14, 1, 1, Z.r0);
+        rect(8, 7, 9, 1, Z.au1);
+        rect(9, 6, 1, 1, Z.au2);
+        rect(12, 5, 1, 2, Z.au2);
+        rect(15, 6, 1, 1, Z.au2);
+      }
+      function knightIcon() {
+        limb(12, 4, 1.5, 19, 1, 1, "#b0242c");
+        ell(12, 7, 6, 3, "#2b3148");
+        rect(6, 7, 12, 13, "#2b3148");
+        rect(7, 6, 1, 13, "#5d6a86");
+        rect(16, 7, 1, 13, "#1b1f2e");
+        rect(12, 4, 1, 16, "#46507a");
+        rect(7, 11, 10, 1, "#05060a");
+        rect(9, 11, 2, 1, "#ff4a3a");
+        rect(13, 11, 2, 1, "#ff4a3a");
+        for (const y of [15, 17])
+          for (const x of [9, 14]) rect(x, y, 1, 1, "#05060a");
+        rect(5, 19, 14, 3, "#1b1f2e");
+      }
+      const roster = LEVELS.filter((l) => !l.secret).map((l) => {
+        const li = $("roster").appendChild(document.createElement("li")),
+          c = li.appendChild(document.createElement("canvas"));
+        c.width = c.height = 24;
+        g = c.getContext("2d");
+        l.icon();
+        g = ctx;
+        li.insertAdjacentHTML(
+          "beforeend",
+          `<span class="who">${l.name}</span><span class="rk">-</span>`,
+        );
+        return li.lastChild;
+      });
       let endAction = () => startFight(0);
       function endScreen(won) {
         game.mode = won ? "win" : "lose";
         game.modeT = 0;
         const t = R(game.fightTime),
           next =
-            won &&
-            levelIdx + 1 < LEVELS.length &&
-            !LEVELS[levelIdx + 1].secret;
+            won && levelIdx + 1 < LEVELS.length && !LEVELS[levelIdx + 1].secret;
         if (next) {
           unlocked = Math.max(unlocked, levelIdx + 2);
           store.set("dragonDuelUnlocked", String(unlocked));
           showLevelButtons();
         }
+        if (won && L.secret && !glovesWon) {
+          glovesWon = true;
+          store.set("dragonDuelGloves", "1");
+          showLevelButtons();
+        }
+        $("titleBtn").hidden = !glovesWon;
         $("endEyebrow").textContent = won ? L.winText : L.loseText;
         $("endTitle").textContent = won ? "Victory" : "You fell";
         $("endTitle").className = won ? "" : "lose";
@@ -9250,8 +10130,7 @@
           `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`;
         $("stParries").textContent = stats.parries;
         $("stTaken").textContent = stats.taken;
-        $("stRankBox").hidden = !won;
-        $("stRank").textContent =
+        const rank =
           player.hp >= 5
             ? "S"
             : player.hp === 4
@@ -9259,6 +10138,26 @@
               : player.hp >= 2
                 ? "B"
                 : "C";
+        $("stRankBox").hidden = !won;
+        $("stRank").textContent = rank;
+        if (won && !L.secret) {
+          const k = "dragonDuelRank" + levelIdx,
+            best = store.get(k);
+          if (!best || RANKS.indexOf(rank) < RANKS.indexOf(best))
+            store.set(k, rank);
+        }
+        // the last duel won: the victory screen instead, then back to the start
+        if (won && levelIdx === LAST) {
+          $("vicEyebrow").textContent = L.winText;
+          roster.forEach(
+            (el, i) =>
+              (el.textContent = store.get("dragonDuelRank" + i) || "-"),
+          );
+          endAction = () => startFight(0);
+          showOverlay("victory");
+          sfx.victory();
+          return;
+        }
         $("againBtn").textContent = next
           ? "Next duel"
           : won
@@ -9279,6 +10178,10 @@
       /* ================= Input ================= */
       const btnParry = $("btnParry"),
         btnAttack = $("btnAttack"),
+        btnRoll = $("btnRoll"),
+        ultCard = $("ultCard"),
+        reactCam = $("reactCam"),
+        camCtx = reactCam.getContext("2d"),
         muteBtn = $("muteBtn");
       const PARRY_KEYS = new Set(["ArrowLeft", "KeyA", "KeyJ", "KeyZ"]);
       const ATTACK_KEYS = new Set(["ArrowRight", "KeyD", "KeyK", "KeyX"]);
@@ -9330,6 +10233,9 @@
         } else if (ATTACK_KEYS.has(k)) {
           press(btnAttack);
           act("attack");
+        } else if (k === "Space") {
+          press(btnRoll);
+          startRoll();
         }
       });
       for (const [btn, a] of [
@@ -9346,15 +10252,50 @@
         });
         btn.addEventListener("contextmenu", (e) => e.preventDefault());
       }
+      btnRoll.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        audioOn();
+        press(btnRoll);
+        startRoll();
+      });
+      btnRoll.addEventListener("contextmenu", (e) => e.preventDefault());
+      // the roll button: shows with gloves, fills a pip per parry in your streak, glows once it's charged
+      const rollPips = [];
+      for (let i = 0; i < CFG.ultStreak; i++)
+        rollPips.push($("rollPips").appendChild(document.createElement("i")));
+      function syncRollBtn() {
+        const show = usingGloves() && game.mode !== "title",
+          n = player.ult ? CFG.ultStreak : player.streak || 0,
+          ready = !!player.ult && !game.roll,
+          key = `${show}${n}${ready}`;
+        if (btnRoll.dataset.k === key) return;
+        btnRoll.dataset.k = key;
+        btnRoll.hidden = !show;
+        rollPips.forEach((p, i) => p.classList.toggle("on", i < n));
+        btnRoll.classList.toggle("ready", ready);
+        btnRoll.setAttribute("aria-disabled", String(!ready));
+      }
       const lvl2Btn = $("lvl2Btn"),
         lvl3Btn = $("lvl3Btn"),
-        lvl4Btn = $("lvl4Btn");
+        lvl4Btn = $("lvl4Btn"),
+        weaponBtn = $("weaponBtn");
       function showLevelButtons() {
         lvl2Btn.hidden = unlocked < 2;
         lvl3Btn.hidden = unlocked < 3;
         lvl4Btn.hidden = unlocked < 4;
+        weaponBtn.hidden = !glovesWon;
+        weaponBtn.textContent =
+          "Weapon: " + (weapon === "gloves" ? "Gloves" : "Sword");
       }
       showLevelButtons();
+      weaponBtn.addEventListener("click", () => {
+        weapon = weapon === "gloves" ? "sword" : "gloves";
+        store.set("dragonDuelWeapon", weapon);
+        showLevelButtons();
+      });
+      $("titleBtn").addEventListener("click", () => toTitle());
+      $("vicTitleBtn").addEventListener("click", () => toTitle());
+      $("vicAgainBtn").addEventListener("click", () => endAction());
       $("startBtn").addEventListener("click", () => startFight(0));
       lvl2Btn.addEventListener("click", () => startFight(1));
       lvl3Btn.addEventListener("click", () => startFight(2));
@@ -9418,7 +10359,8 @@
       }
       function checkCode() {
         const ok =
-          code.length === KONAMI.length && code.every((k, i) => k === KONAMI[i]);
+          code.length === KONAMI.length &&
+          code.every((k, i) => k === KONAMI[i]);
         codeBusy = true;
         showCode(ok ? "good" : "bad");
         ok ? sfx.codeGood() : sfx.codeBad();
